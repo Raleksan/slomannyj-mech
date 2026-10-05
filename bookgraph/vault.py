@@ -15,7 +15,7 @@ import re
 import shutil
 from pathlib import Path
 
-from .resolve import entity_id
+from .resolve import entity_id, key
 from .store import ROOT, read_json, work_dir
 
 FOLDERS = {"chapters": "Главы", "characters": "Персонажи", "places": "Места",
@@ -78,6 +78,10 @@ class Vault:
                         name += " (2)"
                     used.add(name.lower())
                     self.files[e["id"]] = f"{FOLDERS[kind]}/{name}"
+        self.unordered = {}
+        for k, eid in self.entities["index"].items():
+            kind, _, name = k.partition(":")
+            self.unordered.setdefault((kind, " ".join(sorted(name.split()))), eid)
         for s in self.storylines:
             self.files[s["id"]] = f"{FOLDERS['storylines']}/{safe(s['name'])}"
             self.titles[s["id"]] = s["name"]
@@ -96,6 +100,9 @@ class Vault:
 
     def name_link(self, kind: str, name: str) -> str:
         eid = entity_id(self.entities, kind, name)
+        if not eid:
+            # The model may write "Ноэда Нодами" for the entity "Нодами Ноэда".
+            eid = self.unordered.get((kind, " ".join(sorted(key(name).split()))))
         return self.link(eid) if eid else name
 
     # Pages.
