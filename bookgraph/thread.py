@@ -107,7 +107,7 @@ async def storylines(client: Client, events: list[dict], progress: Progress) -> 
     listing = "\n".join(f"{text[k]} — {n}" for k, n in top)
     t = time.monotonic()
     answer = await client.ask(Storylines, STORY_SYSTEM.format(n=STORYLINES), listing,
-                              think=True, max_tokens=12000, temperature=0.4)
+                              think=True, max_tokens=24000, temperature=0.4)
     lines = [{"id": f"s{i:02d}", "name": s.name, "description": s.description}
              for i, s in enumerate(answer.storylines, 1)]
     progress.tick("storylines", time.monotonic() - t, f"{len(lines)} storylines", client.stats)

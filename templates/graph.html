@@ -66,7 +66,10 @@ button[aria-pressed="true"] { background: var(--text-primary); color: var(--surf
 .seg button { border-radius: 0; margin-left: -1px; }
 .seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
 .seg button:last-child { border-radius: 0 6px 6px 0; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px; background: var(--surface-1); border-bottom: 1px solid var(--border); }
+.legend-bar { display: flex; gap: 8px; align-items: flex-start; padding: 8px 16px; background: var(--surface-1); border-bottom: 1px solid var(--border); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; max-height: 56px; overflow: hidden; }
+.legend-bar.open .legend { max-height: none; }
+.legend-bar > div:last-child { display: flex; gap: 6px; flex: none; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 6px;
   border: 1px solid var(--border); border-radius: 999px; cursor: pointer; color: var(--text-primary);
@@ -78,6 +81,13 @@ button[aria-pressed="true"] { background: var(--text-primary); color: var(--surf
 main { flex: 1; display: flex; min-height: 0; }
 #stage { flex: 1; position: relative; min-width: 0; }
 #cy { position: absolute; inset: 0; background: var(--surface-1); }
+#lanes { position: absolute; left: 0; top: 0; bottom: 0; width: 0; pointer-events: none; z-index: 3; }
+#lanes .lab {
+  position: absolute; left: 8px; transform: translateY(-50%); white-space: nowrap; pointer-events: auto; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 4px; padding: 1px 6px;
+  max-width: 190px; overflow: hidden; text-overflow: ellipsis;
+}
 #table { position: absolute; inset: 0; overflow: auto; background: var(--surface-1); display: none; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -133,9 +143,10 @@ a:hover, .linkish:hover { text-decoration: underline; }
   <datalist id="people"></datalist>
   <label>Поиск <input id="q" type="search" placeholder="слово в событии" size="18"></label>
 </div>
-<div class="legend" id="legend"></div>
+<div class="legend-bar" id="legendbar"><div class="legend" id="legend"></div>
+  <div><button id="more" aria-expanded="false">ещё ▾</button><button id="all">все линии</button><button id="nolines">ни одной</button></div></div>
 <main>
-  <div id="stage"><div id="cy"></div><div id="table"></div><div id="tip"></div></div>
+  <div id="stage"><div id="cy"></div><div id="lanes"></div><div id="table"></div><div id="tip"></div></div>
   <aside id="panel"></aside>
 </main>
 <script>/*CYTOSCAPE*/</script>
@@ -180,8 +191,7 @@ function renderLegend() {
        <span class="sw" style="background:${color(s.slot)}"></span>${esc(s.name)} <span class="n">${s.events}</span></span>`);
   chips.push(`<span class="chip" data-line="${NONE}" data-off="${state.off.has(NONE)}">
        <span class="sw" style="background:${css("--neutral")}"></span>Без линии</span>`);
-  $("#legend").innerHTML = chips.join("") +
-    ` <button id="all">все линии</button> <button id="nolines">ни одной</button>`;
+  $("#legend").innerHTML = chips.join("");
 }
 
 function visibleEvents() {
@@ -213,9 +223,10 @@ function styles() {
     {selector: "node.ev", style: {
       "background-color": "data(color)", width: "data(size)", height: "data(size)",
       "border-width": 2, "border-color": surface, label: "data(label)", "font-size": 10,
-      color: ink2, "text-valign": "bottom", "text-margin-y": 3, "text-wrap": "ellipsis",
-      "text-max-width": 110, "min-zoomed-font-size": 8,
+      color: ink2, "text-valign": "bottom", "text-margin-y": 3, "text-wrap": "wrap",
+      "text-max-width": 84, "min-zoomed-font-size": 8,
     }},
+    {selector: "node.ev.up", style: {"text-valign": "top", "text-margin-y": -3}},
     {selector: "node.ev.major", style: {"font-size": 11, color: ink, "font-weight": 600}},
     {selector: "node.lane", style: {
       shape: "rectangle", width: 1, height: 1, "background-opacity": 0, label: "data(label)",
@@ -267,26 +278,29 @@ function drawPlot() {
   }
   for (const s of D.storylines) if (counts[s.id]) lanes.push(s.id);
   if (counts[NONE]) lanes.push(NONE);
-  const laneY = Object.fromEntries(lanes.map((l, i) => [l, i * 80]));
+  const laneY = Object.fromEntries(lanes.map((l, i) => [l, i * 110]));
   const els = [];
   let x = 0, lastCh = -1;
   const chapterX = [];
   const lastInLane = {};
+  const laneCount = {};
   for (const e of evs) {
     if (e.ch !== lastCh) {
-      x += lastCh < 0 ? 0 : 50;
+      x += lastCh < 0 ? 0 : 60;
       chapterX.push([e.ch, x]);
       lastCh = e.ch;
     }
     const l = laneOf[e.id];
-    els.push({group: "nodes", classes: "ev" + (e.imp === 3 ? " major" : ""),
+    // Alternate labels above and below along each row so neighbours do not collide.
+    const up = (laneCount[l] = (laneCount[l] || 0) + 1) % 2 === 0;
+    els.push({group: "nodes", classes: "ev" + (e.imp === 3 ? " major" : "") + (up ? " up" : ""),
       data: {id: e.id, label: e.imp >= 2 ? e.title : "", color: lineColor(l), size: sizeOf(e.imp)},
       position: {x, y: laneY[l]}});
     if (lastInLane[l]) {
       els.push({group: "edges", classes: "thread", data: {id: "t" + e.id, source: lastInLane[l], target: e.id, color: lineColor(l)}});
     }
     lastInLane[l] = e.id;
-    x += 46;
+    x += 58;
   }
   const shown = new Set(evs.map(e => e.id));
   for (const [i, ed] of D.edges.entries()) {
@@ -294,10 +308,9 @@ function drawPlot() {
       els.push({group: "edges", classes: "link", data: {id: "l" + i, source: ed.s, target: ed.t, type: ed.type}});
     }
   }
-  for (const l of lanes) {
-    els.push({group: "nodes", classes: "lane", data: {id: "lane-" + l, line: l,
-      label: l === NONE ? "Без линии" : byLine[l].name}, position: {x: -30, y: laneY[l]}});
-  }
+  plotLanes = lanes.map(l => ({id: l, y: laneY[l]}));
+  $("#lanes").innerHTML = lanes.map(l => `<span class="lab" data-line-info="${l}" style="--c:${lineColor(l)}"
+    title="${esc(l === NONE ? "Без линии" : byLine[l].description)}">${esc(l === NONE ? "Без линии" : byLine[l].name)}</span>`).join("");
   for (const [ch, cx] of chapterX) {
     const t = D.chapters[ch].title.replace(/^Глава\s*/, "Гл. ");
     els.push({group: "nodes", classes: "chap", data: {id: "chap-" + ch, ch, label: t}, position: {x: cx, y: -60}});
@@ -307,7 +320,26 @@ function drawPlot() {
   cy.nodes().ungrabify();
   cy.style(styles());
   applyFocus();
-  cy.fit(undefined, 40);
+  // Fit the rows to the height and start at the first chapter; the book
+  // runs off to the right.
+  const h = $("#stage").clientHeight;
+  const rows = Math.max(lanes.length, 1) * 110 + 90;
+  const zoom = Math.min(1.4, Math.max(0.15, (h - 30) / rows));
+  cy.viewport({zoom, pan: {x: 210, y: 70 * zoom + 15}});
+  placeLanes();
+}
+
+let plotLanes = [];
+function placeLanes() {
+  const box = $("#lanes");
+  if (state.view !== "plot") { box.style.display = "none"; return; }
+  box.style.display = "block";
+  const z = cy.zoom(), py = cy.pan().y, h = $("#stage").clientHeight;
+  box.querySelectorAll(".lab").forEach((el, i) => {
+    const y = plotLanes[i].y * z + py;
+    el.style.top = y + "px";
+    el.style.display = y < 0 || y > h ? "none" : "block";
+  });
 }
 
 function drawCast() {
@@ -337,6 +369,7 @@ function drawCast() {
   cy.elements().remove();
   cy.add(els);
   cy.style(styles());
+  $("#lanes").style.display = "none";
   cy.layout({name: "cose", animate: false, nodeRepulsion: () => 90000, idealEdgeLength: e => 160 / Math.sqrt(e.data("n")),
     edgeElasticity: e => 60 * e.data("n"), gravity: 0.6, numIter: 2500, randomize: true}).run();
   applyFocus();
@@ -373,6 +406,7 @@ function applyFocus() {
 function redraw() {
   $("#cy").style.display = state.view === "table" ? "none" : "block";
   $("#table").style.display = state.view === "table" ? "block" : "none";
+  if (state.view === "table") $("#lanes").style.display = "none";
   if (state.view === "plot") drawPlot();
   else if (state.view === "cast") drawCast();
   else drawTable();
@@ -467,7 +501,6 @@ function focusEvent(id) {
 // Wiring.
 cy.on("tap", "node.ev", ev => showEvent(ev.target.id()));
 cy.on("tap", "node.person", ev => showCharacter(ev.target.id()));
-cy.on("tap", "node.lane", ev => showLine(ev.target.data("line")));
 cy.on("tap", "node.chap", ev => showChapter(ev.target.data("ch")));
 const tip = $("#tip");
 cy.on("mouseover", "node.ev, node.person", ev => {
@@ -484,13 +517,19 @@ cy.on("mouseover", "node.ev, node.person", ev => {
   tip.style.display = "block";
 });
 cy.on("mouseout", "node", () => { tip.style.display = "none"; });
-cy.on("viewport", () => { tip.style.display = "none"; });
+cy.on("viewport", () => { tip.style.display = "none"; placeLanes(); });
 
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-ev],[data-who],[data-line-info],[data-filter-who],[data-line],[data-view],[data-imp],#all,#nolines");
+  const t = ev.target.closest("[data-ev],[data-who],[data-line-info],[data-filter-who],[data-line],[data-view],[data-imp],#all,#nolines,#more");
   if (!t) return;
   if (t.dataset.view) return setView(t.dataset.view);
   if (t.dataset.imp) { state.imp = +t.dataset.imp; syncControls(); return redraw(); }
+  if (t.id === "more") {
+    const open = $("#legendbar").classList.toggle("open");
+    t.setAttribute("aria-expanded", open);
+    t.textContent = open ? "свернуть ▴" : "ещё ▾";
+    return;
+  }
   if (t.id === "all") { state.off.clear(); renderLegend(); return redraw(); }
   if (t.id === "nolines") { D.storylines.forEach(s => state.off.add(s.id)); state.off.add(NONE); renderLegend(); return redraw(); }
   if (t.dataset.line) {

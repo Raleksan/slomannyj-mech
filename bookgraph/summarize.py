@@ -183,7 +183,7 @@ async def run(book: str, concurrency: int) -> None:
         t = time.monotonic()
         overview = await client.ask(Overview, OVERVIEW,
                                     f"«{meta['title']}», {meta['author']}.\n\nГлавы:\n{lines}\n\n"
-                                    f"Сюжетные линии:\n{story}", think=True, max_tokens=12000)
+                                    f"Сюжетные линии:\n{story}", think=True, max_tokens=20000)
         write_json(wd / "notes" / "overview.json", dump(overview))
         progress.tick("overview", time.monotonic() - t, "book overview", client.stats)
     finally:

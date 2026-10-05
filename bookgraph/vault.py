@@ -47,7 +47,14 @@ class Vault:
         self.entities = read_json(wd / "entities.json")
         self.storylines = threads["storylines"]
         self.events = threads["events"]
-        self.edges = threads["edges"]
+        # Extraction and the link pass can join the same two events; keep one
+        # link per pair, the one that says why.
+        pairs: dict[tuple[str, str], dict] = {}
+        for edge in threads["edges"]:
+            k = (edge["src"], edge["dst"])
+            if k not in pairs or (edge["why"] and not pairs[k]["why"]):
+                pairs[k] = edge
+        self.edges = list(pairs.values())
         self.by_event = {e["id"]: e for e in self.events}
         self.notes = {}
         for kind in FOLDERS:
