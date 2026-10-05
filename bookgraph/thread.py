@@ -3,7 +3,7 @@
 1. The free storyline tags from extraction are merged into STORYLINES named
    storylines; every tag is then mapped to one of them (or to none), in
    batches. An event belongs to the storylines of its tags.
-2. For each chapter, in parallel, the model sees that chapter's notable
+2. For each chapter, in parallel with step 1, the model sees that chapter's notable
    events and the notable events before it, and says which earlier event
    led to, continued, resolved or mirrored each one. Links inside one chunk
    come from extraction already.
@@ -176,12 +176,14 @@ async def run(book: str, concurrency: int) -> None:
     progress = Progress(book, "thread", 1 + -(-n_tags // TAG_BATCH) + chapters)
     client = Client(concurrency)
     try:
-        lines, mapping = await storylines(client, events, progress)
+        # The storyline call thinks for a long time; the links need none of
+        # its output, so they run alongside it.
+        (lines, mapping), linked = await asyncio.gather(
+            storylines(client, events, progress), links(client, events, progress))
         for e in events:
             e["storylines"] = list(dict.fromkeys(mapping[t] for t in e["tags"] if t in mapping))
         edges = [{"src": c, "dst": e["id"], "type": "причина", "why": ""}
-                 for e in events for c in e["causes"]]
-        edges += await links(client, events, progress)
+                 for e in events for c in e["causes"]] + linked
     finally:
         await client.close()
         progress.finish()
