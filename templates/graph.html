@@ -201,7 +201,7 @@ for (const x of D.edges) {
 const NONE = "__none";
 
 const state = {
-  view: "plot", imp: 2, from: 0, to: D.chapters.length - 1,
+  view: "plot", imp: D.default_importance, from: 0, to: D.chapters.length - 1,
   who: null, q: "", off: new Set(D.default_lines.length
     ? [...D.storylines.map(s => s.id).filter(id => !D.default_lines.includes(id)), NONE] : []),
 };

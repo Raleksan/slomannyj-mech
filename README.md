@@ -21,9 +21,10 @@ own, so a run can stop and resume; the model stages cache every answer.
 | `site NAME [-o DIR]` | no | `out/NAME/site/`: the vault as a static website |
 | `fix NAME OLD=NEW` | no | respells a name in all of `work/NAME/`, in every case form; then render and site |
 
-The plot opens with every storyline, or only those named in
-`work/NAME/graph.json`, as `{"lines": ["Война с Гримм", "Наследие Палача"]}`;
-the legend switches the rest on.
+The plot opens with every storyline and the notable events, or as
+`work/NAME/graph.json` says: `{"lines": ["Война с Гримм", "Наследие Палача"],
+"importance": 3}` shows those two lines and turning points only (1 is every
+event). The legend and the importance buttons change it on the page.
 
 `progress NAME [-w 10]` shows the running stage: done/total, ETA, tokens,
 GPU load and busy server slots, the most present characters so far.

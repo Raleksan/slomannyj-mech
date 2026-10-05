@@ -62,16 +62,21 @@ def build(book: str, link=obsidian_uri) -> dict:
                   for x in v.edges if x["src"] in v.by_event and x["dst"] in v.by_event],
         "cast": sorted(cast_ids),
         "default_lines": default_lines(book, v),
+        # 1 every event, 2 notable ones, 3 turning points only.
+        "default_importance": view_settings(book).get("importance", 2),
     }
 
 
-def default_lines(book: str, v: Vault) -> list[str]:
-    """Storylines the plot opens with, from work/<book>/graph.json
-    ({"lines": [names]}); none listed means all of them."""
+def view_settings(book: str) -> dict:
+    """How the page opens, from work/<book>/graph.json:
+    {"lines": [storyline names], "importance": 1-3}."""
     path = work_dir(book) / "graph.json"
-    if not path.exists():
-        return []
-    names = read_json(path).get("lines", [])
+    return read_json(path) if path.exists() else {}
+
+
+def default_lines(book: str, v: Vault) -> list[str]:
+    """Storylines the plot opens with; none listed means all of them."""
+    names = view_settings(book).get("lines", [])
     ids = {s["name"]: s["id"] for s in v.storylines}
     missing = [n for n in names if n not in ids]
     if missing:
