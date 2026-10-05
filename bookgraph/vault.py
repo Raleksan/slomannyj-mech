@@ -140,7 +140,7 @@ class Vault:
             if e["where"] or e["where_text"]:
                 meta.append(self.link(e["where"]) if e["where"] else e["where_text"])
             if e["storylines"]:
-                meta.append(" ".join(self.link(s) for s in e["storylines"]))
+                meta.append(", ".join(self.link(s) for s in e["storylines"]))
             out.append(f"- {mark}{title} — {e['what']} ^{e['id']}")
             if meta:
                 out.append(f"\t- {' · '.join(meta)}")
@@ -243,11 +243,8 @@ class Vault:
             out.append(f"- {self.link(ch['id'])}" + (f" — {note['oneline']}" if note else ""))
         return "\n".join(out) + "\n"
 
-    def write(self, root: Path) -> None:
-        if root.exists():
-            shutil.rmtree(root)
-        for folder in FOLDERS.values():
-            (root / folder).mkdir(parents=True)
+    def pages(self) -> dict[str, str]:
+        """Markdown for every note, by path without .md."""
         pages = {"00 Обзор": self.index()}
         for i, ch in enumerate(self.meta["chapters"]):
             pages[self.files[ch["id"]]] = self.chapter(i, ch)
@@ -260,6 +257,14 @@ class Vault:
                     pages[self.files[ent["id"]]] = self.entity(kind, ent)
         for s in self.storylines:
             pages[self.files[s["id"]]] = self.storyline(s)
+        return pages
+
+    def write(self, root: Path) -> None:
+        if root.exists():
+            shutil.rmtree(root)
+        for folder in FOLDERS.values():
+            (root / folder).mkdir(parents=True)
+        pages = self.pages()
         for name, text in pages.items():
             (root / f"{name}.md").write_text(text, encoding="utf-8")
         # Colour the graph view by folder.

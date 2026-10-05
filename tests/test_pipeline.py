@@ -112,3 +112,25 @@ class Names(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SiteMarkdown(unittest.TestCase):
+    def setUp(self):
+        from bookgraph.site import Site
+
+        self.site = Site.__new__(Site)
+        self.site.by_name = {"Жон Арк": "Персонажи/Жон Арк", "Глава 1": "Главы/Глава 1"}
+
+    def test_wikilinks_and_emphasis(self):
+        out = self.site.inline("**[[Жон Арк]]** и [[Глава 1#^ch001-01-e02|обед]] с [[Никто]] <b>", 1)
+        self.assertEqual(out, '<strong><a href="../%D0%9F%D0%B5%D1%80%D1%81%D0%BE%D0%BD%D0%B0%D0%B6%D0%B8/'
+                              '%D0%96%D0%BE%D0%BD%20%D0%90%D1%80%D0%BA.html">Жон Арк</a></strong> и '
+                              '<a href="../%D0%93%D0%BB%D0%B0%D0%B2%D1%8B/%D0%93%D0%BB%D0%B0%D0%B2%D0%B0%201.html'
+                              '#ch001-01-e02">обед</a> с Никто &lt;b&gt;')
+
+    def test_nested_list_with_block_id(self):
+        md = "---\ntype: x\n---\n# T\n\n- Обед — ссора ^ch001-01-e02\n\t- [[Жон Арк]]\n- Второе\n\nТекст"
+        out = self.site.body(md, 0).replace("\n", "")
+        self.assertIn('<li id="ch001-01-e02">Обед — ссора<ul><li>', out)
+        self.assertIn("</li></ul></li><li>Второе</li></ul><p>Текст</p>", out)
+        self.assertNotIn("type: x", out)

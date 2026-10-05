@@ -9,6 +9,7 @@
   bookgraph thread NAME [-j 8]         storylines and cross-chapter links: threads.json
   bookgraph summarize NAME [-j 8]      note texts into work/NAME/notes/
   bookgraph render NAME                vault and graph.html into out/NAME/
+  bookgraph site NAME [-o DIR]         static website from the vault, out/NAME/site/
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
@@ -108,6 +109,12 @@ def cmd_render(args) -> None:
     graph.run(args.book)
 
 
+def cmd_site(args) -> None:
+    from . import site
+
+    site.run(args.book, Path(args.out) if args.out else None)
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -152,6 +159,10 @@ def main(argv=None) -> None:
     p.add_argument("book")
     p.add_argument("-j", "--jobs", type=int, default=8)
     p.set_defaults(func=cmd_summarize)
+    p = sub.add_parser("site")
+    p.add_argument("book")
+    p.add_argument("-o", "--out", help="where to write the site; default out/NAME/site")
+    p.set_defaults(func=cmd_site)
     p = sub.add_parser("progress")
     p.add_argument("book")
     p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",

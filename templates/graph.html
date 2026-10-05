@@ -50,6 +50,7 @@ header {
 }
 h1 { font-size: 18px; margin: 0; }
 .byline { color: var(--text-secondary); }
+.home { color: var(--accent); text-decoration: none; }
 .tabs { margin-left: auto; display: flex; gap: 4px; }
 button, select, input {
   font: inherit; color: var(--text-primary); background: var(--surface-1);
@@ -123,7 +124,7 @@ a:hover, .linkish:hover { text-decoration: underline; }
 </head>
 <body>
 <header>
-  <h1 id="title"></h1><span class="byline" id="byline"></span>
+  <!--HOME--><h1 id="title"></h1><span class="byline" id="byline"></span>
   <div class="tabs" role="tablist">
     <button data-view="plot" aria-pressed="true">Сюжет</button>
     <button data-view="cast" aria-pressed="false">Персонажи</button>
@@ -413,7 +414,7 @@ function redraw() {
 }
 
 // Details panel.
-function obs(uri) { return uri ? `<a class="obs" href="${esc(uri)}">Открыть в Obsidian →</a>` : ""; }
+function obs(uri) { return uri ? `<a class="obs" href="${esc(uri)}">{{OPEN}}</a>` : ""; }
 function evLink(id) { const e = byEvent[id]; return `<span class="linkish" data-ev="${id}">${esc(e.title)}</span> <span class="hint">(${esc(D.chapters[e.ch].title)})</span>`; }
 function whoLink(id) { return byChar[id] ? `<span class="linkish" data-who="${id}">${esc(nameOf(id))}</span>` : esc(nameOf(id)); }
 
@@ -469,7 +470,7 @@ function showIntro() {
     Стрелки — причины (→), продолжения (пунктир), развязки (⊣) и переклички (точки).
     Крупные точки — поворотные события.</p>
     <p class="hint">«Персонажи»: связи по общим событиям в выбранных главах. «Список» — те же события таблицей.</p>
-    <p class="hint">Щёлкните по событию, персонажу, линии или главе, чтобы увидеть подробности и открыть заметку в Obsidian.</p>`;
+    <p class="hint">Щёлкните по событию, персонажу, линии или главе, чтобы увидеть подробности и {{OPEN_HINT}}.</p>`;
 }
 
 function select(id) {

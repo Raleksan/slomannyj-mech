@@ -18,9 +18,30 @@ own, so a run can stop and resume; the model stages cache every answer.
 | `thread NAME` | yes | `threads.json`: storylines, events, cause and continuation links |
 | `summarize NAME` | yes | `notes/`: chapter, character, storyline, place and group texts, overview |
 | `render NAME` | no | `out/NAME/<title>/` Obsidian vault, `graph.html` beside it and inside it |
+| `site NAME [-o DIR]` | no | `out/NAME/site/`: the vault as a static website |
 
 `progress NAME [-w 10]` shows the running stage: done/total, ETA, tokens,
 GPU load and busy server slots, the most present characters so far.
+
+## A website
+
+`site` turns the same notes into plain HTML: a page per note with the
+pages that link to it, a list per folder, a search box over names,
+aliases and events, and the graph, whose links open the pages. Links are
+relative, so it works from disk, under any path, and on GitHub Pages
+(it writes `.nojekyll`). To look at it locally:
+
+```bash
+python3 -m http.server -d out/slomannyj_mech/site 8765
+```
+
+To publish it, push the folder's contents to a repository's `gh-pages`
+branch and choose that branch under Settings → Pages:
+
+```bash
+cd out/slomannyj_mech/site && git init -b gh-pages && git add -A && git commit -m site
+git push -f git@github.com:USER/REPO.git gh-pages
+```
 
 ## A GPU host
 
