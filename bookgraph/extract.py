@@ -9,6 +9,7 @@ import hashlib
 import time
 
 from .llm import Client, dump
+from .progress import Progress
 from .schemas import ChunkFacts
 from .store import read_json, work_dir, write_json
 
@@ -54,29 +55,38 @@ async def run(book: str, chapters: str | None, concurrency: int) -> None:
     out_dir = wd / "extract"
     out_dir.mkdir(exist_ok=True)
     todo = []
-    for c in select(read_json(wd / "chunks.json"), chapters):
+    chosen = select(read_json(wd / "chunks.json"), chapters)
+    for c in chosen:
         path = out_dir / f"{c['id']}.json"
         if path.exists() and read_json(path)["hash"] == text_hash(c):
             continue
         todo.append(c)
     print(f"{len(todo)} chunks to extract, {concurrency} at a time")
     client = Client(concurrency)
+    progress = Progress(book, "extract", len(todo), skipped=len(chosen) - len(todo))
     done = 0
 
     async def one(c: dict) -> None:
         nonlocal done
         t = time.monotonic()
-        facts = await client.ask(ChunkFacts, SYSTEM, prompt(meta, c), max_tokens=6144)
+        try:
+            facts = await client.ask(ChunkFacts, SYSTEM, prompt(meta, c), max_tokens=6144)
+        except Exception as e:
+            progress.tick(c["id"], time.monotonic() - t, f"FAILED: {e}", client.stats, failed=True)
+            raise
         write_json(out_dir / f"{c['id']}.json",
                    {"chunk": c["id"], "hash": text_hash(c), "facts": dump(facts)})
         done += 1
-        print(f"[{done}/{len(todo)}] {c['id']}: {len(facts.events)} events, "
-              f"{len(facts.characters)} characters, {time.monotonic() - t:.0f}s")
+        note = (f"{len(facts.events)} events, {len(facts.characters)} characters, "
+                f"{sum(e.importance == 3 for e in facts.events)} turning points")
+        progress.tick(c["id"], time.monotonic() - t, note, client.stats)
+        print(f"[{done}/{len(todo)}] {c['id']}: {note}, {time.monotonic() - t:.0f}s", flush=True)
 
     try:
         results = await asyncio.gather(*(one(c) for c in todo), return_exceptions=True)
     finally:
         await client.close()
+        progress.finish()
     failed = [(c["id"], r) for c, r in zip(todo, results) if isinstance(r, BaseException)]
     for cid, err in failed:
         print(f"FAILED {cid}: {err!r}")

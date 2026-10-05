@@ -6,6 +6,7 @@
   bookgraph extract NAME [-c 1-3] [-j 8]
                                        facts per chunk into work/NAME/extract/
   bookgraph stats NAME                 chapter and chunk sizes
+  bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
 
 import argparse
@@ -62,6 +63,22 @@ def cmd_extract(args) -> None:
     asyncio.run(extract.run(args.book, args.chapters, args.jobs))
 
 
+def cmd_progress(args) -> None:
+    import os
+    import time
+
+    from .progress import show
+
+    base = os.environ.get("BOOKGRAPH_LLM", "http://127.0.0.1:8080").rstrip("/")
+    while True:
+        text = show(args.book, base)
+        if not args.watch:
+            print(text)
+            return
+        print("\033[2J\033[H" + text + f"\n\n(refresh every {args.watch}s, Ctrl-C to quit)", flush=True)
+        time.sleep(args.watch)
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -94,6 +111,11 @@ def main(argv=None) -> None:
     p.add_argument("-j", "--jobs", type=int, default=8,
                    help="requests at once; match llama-server --parallel")
     p.set_defaults(func=cmd_extract)
+    p = sub.add_parser("progress")
+    p.add_argument("book")
+    p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",
+                   help="redraw every SECONDS until Ctrl-C")
+    p.set_defaults(func=cmd_progress)
     args = ap.parse_args(argv)
     args.func(args)
 
