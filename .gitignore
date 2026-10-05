@@ -1,0 +1,6 @@
+/books/
+/work/
+/out/
+/.venv/
+__pycache__/
+*.egg-info/
