@@ -1,5 +1,9 @@
 /books/
-/work/
+/work/*
+!/work/*/
+/work/*/*
+# Hand-written: how the graph page opens.
+!/work/*/graph.json
 /out/
 /.venv/
 __pycache__/

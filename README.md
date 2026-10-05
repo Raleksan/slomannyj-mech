@@ -41,13 +41,16 @@ relative, so it works from disk, under any path, and on GitHub Pages
 python3 -m http.server -d out/slomannyj_mech/site 8765
 ```
 
-To publish it, push the folder's contents to a repository's `gh-pages`
-branch and choose that branch under Settings → Pages:
+To publish it on GitHub Pages, make an empty repository on github.com,
+then:
 
 ```bash
-cd out/slomannyj_mech/site && git init -b gh-pages && git add -A && git commit -m site
-git push -f git@github.com:USER/REPO.git gh-pages
+scripts/publish.sh slomannyj_mech git@github.com:USER/REPO.git
 ```
+
+It rebuilds the site and force-pushes it to the repository's `gh-pages`
+branch. Once, in the repository's Settings → Pages, pick "Deploy from a
+branch", `gh-pages`, `/ (root)`. Run it again after any change.
 
 ## A GPU host
 
@@ -95,4 +98,5 @@ ssh -N -L 8080:127.0.0.1:8080 Ubuntu@HOST &
 order, not by title (in «Сломанный Меч», «Глава 72.1» is 72). Tests, for
 the stages that need no model: `.venv/bin/python -m unittest discover tests`.
 
-Books go in `books/`, which git ignores, as do `work/` and `out/`.
+Books go in `books/`, which git ignores, as do `work/` (except each
+book's `graph.json`) and `out/`.
