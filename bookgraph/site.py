@@ -156,6 +156,7 @@ class Site:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{head_title}</title>
 <link rel="stylesheet" href="{up}style.css">
+<script>try {{ const t = localStorage.getItem("bookgraph-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; }} catch (e) {{}}</script>
 </head>
 <body>
 <header>
@@ -166,6 +167,7 @@ class Site:
            aria-label="Поиск по сайту">
     <ol id="hits" hidden></ol>
   </div>
+  <button class="theme" id="theme" type="button" aria-label="Сменить тему: день или ночь"></button>
 </header>
 <main>
 {content}

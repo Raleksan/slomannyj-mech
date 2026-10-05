@@ -84,6 +84,6 @@ ul.index li { padding: 6px 0; border-bottom: 1px solid var(--border); }
 @media (max-width: 640px) {
   header { position: static; }
   li[id] { scroll-margin-top: 12px; }
-  .search { flex-basis: 100%; margin-left: 0; }
+  .search { flex: 1 1 0; margin-left: 0; }
   h1 { font-size: 25px; }
 }

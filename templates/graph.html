@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}} — граф сюжета</title>
+<script>try { const t = localStorage.getItem("bookgraph-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <style>
 :root {
   color-scheme: light;
@@ -107,6 +108,7 @@ aside li { margin: 3px 0; }
 a, .linkish { color: var(--accent); cursor: pointer; text-decoration: none; }
 a:hover, .linkish:hover { text-decoration: underline; }
 .obs { display: inline-block; margin-top: 8px; }
+.theme { min-width: 36px; }
 .hint { color: var(--text-muted); }
 #tip {
   position: absolute; pointer-events: none; display: none; max-width: 320px; z-index: 5;
@@ -130,6 +132,7 @@ a:hover, .linkish:hover { text-decoration: underline; }
     <button data-view="cast" aria-pressed="false">Персонажи</button>
     <button data-view="table" aria-pressed="false">Список</button>
   </div>
+  <button class="theme" id="theme" type="button" aria-label="Сменить тему: день или ночь"></button>
 </header>
 <div class="filters">
   <label>Важность
@@ -577,7 +580,25 @@ $("#stage").addEventListener("click", e => {
   const tr = e.target.closest("tr[data-ev]");
   if (tr) showEvent(tr.dataset.ev);
 });
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderLegend(); redraw(); });
+// Day and night: an explicit choice sets data-theme and is remembered;
+// without one the page follows the system.
+const themeButton = $("#theme");
+const isDark = () => {
+  const t = document.documentElement.dataset.theme;
+  return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+};
+const paintThemeButton = () => {
+  themeButton.textContent = isDark() ? "☀" : "☾";
+  themeButton.title = isDark() ? "Дневная тема" : "Ночная тема";
+};
+themeButton.addEventListener("click", () => {
+  const next = isDark() ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("bookgraph-theme", next); } catch (e) {}
+  paintThemeButton(); renderLegend(); redraw();
+});
+paintThemeButton();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { paintThemeButton(); renderLegend(); redraw(); });
 
 syncControls();
 showIntro();

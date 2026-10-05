@@ -72,3 +72,26 @@
     if (ev.key === "/" && document.activeElement !== q) { ev.preventDefault(); q.focus(); }
   });
 })();
+
+// Day and night: an explicit choice sets data-theme and is remembered (the
+// graph page reads the same key); without one the page follows the system.
+(() => {
+  const button = document.getElementById("theme");
+  const dark = matchMedia("(prefers-color-scheme: dark)");
+  const isDark = () => {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === "dark" : dark.matches;
+  };
+  const paint = () => {
+    button.textContent = isDark() ? "☀" : "☾";
+    button.title = isDark() ? "Дневная тема" : "Ночная тема";
+  };
+  button.addEventListener("click", () => {
+    const next = isDark() ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("bookgraph-theme", next); } catch (e) {}
+    paint();
+  });
+  dark.addEventListener("change", paint);
+  paint();
+})();
