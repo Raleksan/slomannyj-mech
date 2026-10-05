@@ -77,7 +77,8 @@ class Client:
         for attempt in range(RETRIES):
             async with self.limit:
                 r = await self.http.post("/v1/chat/completions", json=body)
-            r.raise_for_status()
+            if r.is_error:
+                raise RuntimeError(f"HTTP {r.status_code}: {r.text[:500]}")
             data = r.json()
             usage = data.get("usage", {})
             self.stats.prompt += usage.get("prompt_tokens", 0)

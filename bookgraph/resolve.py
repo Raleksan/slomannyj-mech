@@ -111,9 +111,20 @@ def stem(token: str) -> str:
     return ENDINGS.sub("", token) if len(token) > 4 else token
 
 
-def candidate_sets(groups: dict[str, dict]) -> list[list[str]]:
-    """Connected sets of keys that share a meaningful word or a written form."""
-    parent = {k: k for k in groups}
+MAX_SET = 40
+
+
+def link_tokens(k: str, g: dict) -> set[str]:
+    """The words a name may be merged through: its own and its capitalized forms'."""
+    tokens = {t for t in k.split() if t not in TITLES and len(t) > 2}
+    for form in g["forms"]:
+        if form[:1].isupper():
+            tokens |= {t for t in key(form).split() if t not in TITLES and len(t) > 2}
+    return {stem(t) for t in tokens}
+
+
+def components(keys: list[str], tokens: dict[str, set[str]]) -> list[list[str]]:
+    parent = {k: k for k in keys}
 
     def find(k: str) -> str:
         while parent[k] != k:
@@ -122,19 +133,39 @@ def candidate_sets(groups: dict[str, dict]) -> list[list[str]]:
         return k
 
     by_token: dict[str, list[str]] = collections.defaultdict(list)
-    for k, g in groups.items():
-        tokens = {t for t in k.split() if t not in TITLES and len(t) > 2}
-        tokens |= {key(f) for f in g["forms"] if key(f) and key(f) not in TITLES}
-        tokens = {stem(t) for t in tokens}
-        for t in tokens:
+    for k in keys:
+        for t in tokens[k]:
             by_token[t].append(k)
     for ks in by_token.values():
         for other in ks[1:]:
             parent[find(other)] = find(ks[0])
     sets: dict[str, list[str]] = collections.defaultdict(list)
-    for k in groups:
+    for k in keys:
         sets[find(k)].append(k)
     return list(sets.values())
+
+
+def candidate_sets(groups: dict[str, dict]) -> list[list[str]]:
+    """Sets of keys that share a name word, none larger than MAX_SET.
+
+    A set that is too big is held together by a word many names share, such
+    as a family name; that word stops linking and the set splits again,
+    until every part fits in one model call.
+    """
+    tokens = {k: link_tokens(k, g) for k, g in groups.items()}
+    out = []
+    todo = components(list(groups), tokens)
+    while todo:
+        keys = todo.pop()
+        if len(keys) <= MAX_SET:
+            out.append(keys)
+            continue
+        counts = collections.Counter(t for k in keys for t in tokens[k])
+        common = counts.most_common(1)[0][0]
+        for k in keys:
+            tokens[k] = tokens[k] - {common}
+        todo.extend(components(keys, tokens))
+    return out
 
 
 def describe(i: int, g: dict) -> str:
