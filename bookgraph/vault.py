@@ -1,7 +1,7 @@
 """Stage 6a: the Obsidian vault, from entities, threads and notes. No model.
 
 out/<book>/<title>/ is a standalone vault:
-  00 Обзор.md            the entry page
+  00 Обзор.md            the entry page, linking graph.html beside it
   Главы/                 one note per chapter; every event is a list item
                          with a block id (^ch005-02-e03), so other notes link
                          straight to it
@@ -224,7 +224,7 @@ class Vault:
         out = ["---", "type: обзор", "---", f"# {m['title']}", "", f"*{m['author']}*", ""]
         if m.get("annotation"):
             out += [f"> {m['annotation']}", ""]
-        out += ["Интерактивный граф: [graph.html](../graph.html)", ""]
+        out += ["Интерактивный граф: [graph.html](graph.html) (откроется в браузере)", ""]
         if self.overview:
             o = self.overview
             out += ["## О книге", "", o["summary"], "", "## Устройство сюжета", "", o["structure"], ""]

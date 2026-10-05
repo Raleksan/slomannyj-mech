@@ -17,7 +17,7 @@ own, so a run can stop and resume; the model stages cache every answer.
 | `resolve NAME` | yes | `entities.json`: one entity per person, place, group, with aliases |
 | `thread NAME` | yes | `threads.json`: storylines, events, cause and continuation links |
 | `summarize NAME` | yes | `notes/`: chapter, character, storyline, place and group texts, overview |
-| `render NAME` | no | `out/NAME/<title>/` Obsidian vault and `out/NAME/graph.html` |
+| `render NAME` | no | `out/NAME/<title>/` Obsidian vault, `graph.html` beside it and inside it |
 
 `progress NAME [-w 10]` shows the running stage: done/total, ETA, tokens,
 GPU load and busy server slots, the most present characters so far.
@@ -25,19 +25,29 @@ GPU load and busy server slots, the most present characters so far.
 ## A GPU host
 
 ```bash
-scripts/deploy.sh Ubuntu@HOST a100      # or a6000; llama.cpp + GGUF + llama-server
-scripts/analyze.sh Ubuntu@HOST books/slomannyj_mech-b302190.fb2.zip
+scripts/deploy.sh -b vllm Ubuntu@HOST a100     # A100 80 GB: vLLM, bf16 weights
+scripts/deploy.sh Ubuntu@HOST a6000            # smaller cards: llama.cpp, GGUF
+scripts/analyze.sh -j 24 Ubuntu@HOST books/slomannyj_mech-b302190.fb2.zip
 scripts/status.sh Ubuntu@HOST slomannyj_mech
 ```
 
-`deploy.sh` installs CUDA build tools, builds llama.cpp, fetches the GGUF
-with aria2c, runs llama-server under systemd on 127.0.0.1:8080 and copies
-this repo to `~/book-graph` with a venv. `analyze.sh` runs the pipeline in
-the host's tmux session `bookgraph`; `status.sh` redraws its progress.
+`deploy.sh` sets up the model server under systemd on 127.0.0.1:8080 and
+copies this repo (with `books/`) to `~/book-graph` with a venv. The llama
+backend builds llama.cpp with CUDA and fetches the GGUF with aria2c; the
+vllm backend installs vLLM and fetches the bf16 safetensors. `analyze.sh`
+runs every stage in the host's tmux session `bookgraph`; `-j` is how many
+requests go at once (24 for vLLM, 8 for llama.cpp on a100, 4 on a6000).
+`status.sh` redraws the progress. Afterwards copy the results home:
 
-On an A100 80 GB, `host/vllm.sh` swaps llama-server for vLLM with the bf16
-weights, which batches parallel requests much better (see the measurements
-in `bookgraph/llm.py` and `host/vllm.sh`).
+```bash
+rsync -az Ubuntu@HOST:book-graph/work/slomannyj_mech/ work/slomannyj_mech/
+.venv/bin/python -m bookgraph render slomannyj_mech
+```
+
+For «Сломанный Меч» (1.35M tokens) on an A100 with vLLM the whole run took
+about 70 minutes: extract 28, resolve 3, thread 12, summarize 12. llama.cpp
+on the same card writes only 86–120 tokens/s however many requests run, and
+vLLM about 470 (see `bookgraph/llm.py` and `host/vllm.sh`).
 
 Profiles in `host/profiles/`:
 
@@ -54,7 +64,8 @@ ssh -N -L 8080:127.0.0.1:8080 Ubuntu@HOST &
 .venv/bin/python -m bookgraph extract slomannyj_mech -c 1-3
 ```
 
-`BOOKGRAPH_LLM` overrides the server URL. `-c` counts chapters in reading
+`BOOKGRAPH_LLM` overrides the server URL. Tests, for the stages that need
+no model: `.venv/bin/python -m unittest discover tests`. `-c` counts chapters in reading
 order, not by title (in «Сломанный Меч», «Глава 72.1» is 72).
 
 Books go in `books/`, which git ignores, as do `work/` and `out/`.

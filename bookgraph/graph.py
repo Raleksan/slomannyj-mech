@@ -72,6 +72,10 @@ def run(book: str) -> Path:
     path = out_dir(book) / "graph.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(page, encoding="utf-8")
+    # A copy inside the vault, where the overview note links to it.
+    vault = out_dir(book) / safe(data["title"])
+    if vault.is_dir():
+        (vault / "graph.html").write_text(page, encoding="utf-8")
     print(f"graph: {len(data['events'])} events, {len(data['characters'])} characters, "
           f"{len(data['edges'])} links in {path}")
     return path

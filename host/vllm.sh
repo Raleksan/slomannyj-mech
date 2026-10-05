@@ -4,7 +4,7 @@
 # tokens/s however many requests run at once; vLLM 0.31 wrote 470 tokens/s
 # with 24 extraction requests at once (run extract with -j 24).
 #   scripts/deploy.sh -b vllm USER@HOST a100
-# Installs vLLM into /opt/vllm, fetches the model into /opt/models/hf with
+# Needs no CUDA toolkit or llama.cpp, only the driver. Installs vLLM into /opt/vllm, fetches the model into /opt/models/hf with
 # aria2c, and writes the vllm-server unit on 127.0.0.1:8080. It stops
 # llama-server, which holds the same port and GPU memory, and starts vLLM;
 # `systemctl start llama-server` after `systemctl stop vllm-server` goes back.
@@ -15,6 +15,13 @@ SECONDS=0
 HF=huihui-ai/Huihui-Qwen3.8-27B-abliterated
 DIR=/opt/models/hf/Huihui-Qwen3.8-27B-abliterated
 step() { echo "== $* (${SECONDS}s)"; }
+
+export DEBIAN_FRONTEND=noninteractive
+step "packages"
+if ! command -v aria2c >/dev/null || ! python3 -c "import ensurepip" 2>/dev/null || ! command -v tmux >/dev/null; then
+  apt-get update -q
+  apt-get install -y -q aria2 python3-venv tmux
+fi
 
 step "vLLM"
 if [[ ! -x /opt/vllm/bin/vllm ]]; then
