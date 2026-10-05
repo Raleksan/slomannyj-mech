@@ -67,13 +67,29 @@ def gpu() -> str:
 
 
 def slots(base: str) -> str:
+    """Busy slots from llama-server, or running and queued requests from vLLM."""
     try:
         with urllib.request.urlopen(base + "/slots", timeout=3) as r:
             data = json.load(r)
+        busy = sum(1 for s in data if s.get("is_processing"))
+        return f"llama-server: {busy}/{len(data)} slots busy"
+    except Exception:
+        pass
+    try:
+        with urllib.request.urlopen(base + "/metrics", timeout=3) as r:
+            text = r.read().decode()
     except Exception:
         return ""
-    busy = sum(1 for s in data if s.get("is_processing"))
-    return f"llama-server: {busy}/{len(data)} slots busy"
+    found = {}
+    for line in text.splitlines():
+        for name in ("num_requests_running", "num_requests_waiting", "kv_cache_usage_perc"):
+            if line.startswith(f"vllm:{name}"):
+                found[name] = float(line.rsplit(" ", 1)[1])
+    if not found:
+        return ""
+    return (f"vLLM: {found.get('num_requests_running', 0):.0f} requests running, "
+            f"{found.get('num_requests_waiting', 0):.0f} waiting, "
+            f"KV cache {100 * found.get('kv_cache_usage_perc', 0):.0f}% used")
 
 
 def top_characters(book: str, n: int = 12) -> list[tuple[str, int]]:

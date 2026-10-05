@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The faster backend for big GPUs: vLLM serving the bf16 safetensors of the
 # same model, as root. On an A100 llama.cpp tops out near 120 generated
-# tokens/s however many requests run at once; vLLM batches them properly.
+# tokens/s however many requests run at once; vLLM 0.31 wrote 470 tokens/s
+# with 24 extraction requests at once (run extract with -j 24).
 #   scripts/deploy.sh -b vllm USER@HOST a100
 # Installs vLLM into /opt/vllm, fetches the model into /opt/models/hf with
 # aria2c, and writes the vllm-server unit on 127.0.0.1:8080. It stops
@@ -50,6 +51,9 @@ Conflicts=llama-server.service
 
 [Service]
 Environment=HF_HUB_OFFLINE=1
+# FlashInfer's sampler compiles itself on first use (needs ninja and a CUDA
+# toolkit matching torch's); vLLM's own sampler needs neither.
+Environment=VLLM_USE_FLASHINFER_SAMPLER=0
 ExecStart=/opt/vllm/bin/vllm serve ${DIR} --served-model-name qwen3.8-27b \\
   --host 127.0.0.1 --port 8080 --dtype bfloat16 --max-model-len 32768 \\
   --max-num-seqs 32 --gpu-memory-utilization 0.92 \\
