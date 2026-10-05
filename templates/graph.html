@@ -19,7 +19,7 @@ try { if (localStorage.getItem("bookgraph-spoilers") !== "ok") document.document
   --accent: #2a78d6;
   --neutral: #a8a7a0;
   --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
-  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -28,7 +28,7 @@ try { if (localStorage.getItem("bookgraph-spoilers") !== "ok") document.document
     --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
     --accent: #3987e5; --neutral: #6b6a64;
     --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
-    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
   }
 }
 :root[data-theme="dark"] {
@@ -37,7 +37,7 @@ try { if (localStorage.getItem("bookgraph-spoilers") !== "ok") document.document
   --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
   --accent: #3987e5; --neutral: #6b6a64;
   --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
-  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -472,7 +472,7 @@ function drawCast() {
   sizes[OTHERS] = 0;
   for (const id of people) sizes[cluster[id]]++;
   const boxed = c => sizes[c] > 0;
-  const colorOf = c => c < 7 ? css(`--series-${c + 1}`) : css("--neutral");
+  const colorOf = c => c < 8 ? css(`--series-${c + 1}`) : css("--neutral");
   castClusters = [];
   const els = [], boxes = [];
   for (const c of Object.keys(sizes).map(Number).filter(c => sizes[c]).sort((a, b) => a - b)) {

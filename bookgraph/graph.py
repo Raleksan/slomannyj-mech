@@ -16,10 +16,10 @@ from .store import ROOT, read_json, work_dir
 from .vault import Vault, out_dir, safe
 
 TEMPLATES = ROOT / "templates"
-# Storylines past this many (by event count) share one gray: eight
-# categorical hues is the most that stay apart, and the row label carries
-# identity anyway.
-COLORED = 7
+# Storylines past this many share one gray: eight categorical hues is the
+# most that stay apart, and the row label carries identity anyway. The lines
+# the page opens with get theirs first, then the biggest.
+COLORED = 8
 CAST = 80
 
 
@@ -38,6 +38,9 @@ def build(book: str, link=obsidian_uri) -> dict:
 
     sizes = collections.Counter(s for e in v.events for s in e["storylines"])
     lines = sorted(v.storylines, key=lambda s: -sizes[s["id"]])
+    shown = default_lines(book, v)
+    by_claim = shown + [s["id"] for s in lines if s["id"] not in shown]
+    slots = {sid: i + 1 for i, sid in enumerate(by_claim[:COLORED])}
     cast = [e for e in v.entities["characters"] if e["mentions"] >= 2][:CAST]
     cast_ids = {e["id"] for e in cast}
     return {
@@ -46,8 +49,8 @@ def build(book: str, link=obsidian_uri) -> dict:
                       "oneline": v.notes.get(c["id"], {}).get("oneline", "")}
                      for c in v.meta["chapters"]],
         "storylines": [{"id": s["id"], "name": s["name"], "description": s["description"],
-                        "slot": i + 1 if i < COLORED else 0, "events": sizes[s["id"]],
-                        "uri": uri(s["id"])} for i, s in enumerate(lines)],
+                        "slot": slots.get(s["id"], 0), "events": sizes[s["id"]],
+                        "uri": uri(s["id"])} for s in lines],
         "events": [{"id": e["id"], "ch": chapter_index[e["chapter"]], "title": e["title"],
                     "what": e["what"], "imp": e["importance"], "kind": e["kind"],
                     "who": e["who"], "where": v.titles.get(e["where"], e["where_text"]) if e["where"] else e["where_text"],
@@ -61,7 +64,7 @@ def build(book: str, link=obsidian_uri) -> dict:
         "edges": [{"s": x["src"], "t": x["dst"], "type": x["type"], "why": x["why"]}
                   for x in v.edges if x["src"] in v.by_event and x["dst"] in v.by_event],
         "cast": sorted(cast_ids),
-        "default_lines": default_lines(book, v),
+        "default_lines": shown,
         # 1 every event, 2 notable ones, 3 turning points only.
         "default_importance": view_settings(book).get("importance", 2),
     }
