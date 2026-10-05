@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}} — граф сюжета</title>
-<script>try { const t = localStorage.getItem("bookgraph-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>try { const t = localStorage.getItem("bookgraph-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+try { if (localStorage.getItem("bookgraph-spoilers") !== "ok") document.documentElement.dataset.spoilers = ""; } catch (e) { document.documentElement.dataset.spoilers = ""; }</script>
 <style>
 :root {
   color-scheme: light;
@@ -109,6 +110,24 @@ a, .linkish { color: var(--accent); cursor: pointer; text-decoration: none; }
 a:hover, .linkish:hover { text-decoration: underline; }
 .obs { display: inline-block; margin-top: 8px; }
 .theme { min-width: 36px; }
+html[data-spoilers] body > *:not(.spoilers) { visibility: hidden; }
+.spoilers {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px;
+  background: var(--surface-0);
+}
+.spoilers > div {
+  max-width: 460px; padding: 24px; border-radius: 10px;
+  background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+}
+.spoilers h2 { margin: 0 0 10px; font-size: 22px; border: 0; padding: 0; }
+.spoilers p { margin: 0 0 12px; color: var(--text-secondary); }
+.spoilers .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.spoilers button {
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; padding: 8px 16px;
+  border: 1px solid var(--border); background: var(--surface-0); color: var(--text-primary);
+}
+.spoilers button.go { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 .hint { color: var(--text-muted); }
 #tip {
   position: absolute; pointer-events: none; display: none; max-width: 320px; z-index: 5;
@@ -599,6 +618,33 @@ themeButton.addEventListener("click", () => {
 });
 paintThemeButton();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { paintThemeButton(); renderLegend(); redraw(); });
+
+// The spoiler notice: covers the page until the reader agrees, once per browser.
+function spoilerGate(title) {
+  const root = document.documentElement;
+  if (!("spoilers" in root.dataset)) return;
+  const gate = document.createElement("div");
+  gate.className = "spoilers";
+  gate.innerHTML = `<div role="alertdialog" aria-modal="true" aria-labelledby="spoilers-title">
+    <h2 id="spoilers-title">Осторожно, спойлеры</h2>
+    <p>Здесь пересказана вся книга «${title.replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`)}» до последней главы:
+      повороты сюжета, судьбы персонажей, чем кончается каждая линия.</p>
+    <p>Если вы ещё читаете, лучше вернуться сюда потом.</p>
+    <div class="actions"><button class="go" type="button">Понятно, показать</button>
+      <button class="back" type="button">Назад</button></div></div>`;
+  document.body.appendChild(gate);
+  const go = gate.querySelector(".go");
+  go.addEventListener("click", () => {
+    try { localStorage.setItem("bookgraph-spoilers", "ok"); } catch (e) {}
+    delete root.dataset.spoilers;
+    gate.remove();
+  });
+  gate.querySelector(".back").addEventListener("click", () => {
+    if (history.length > 1) history.back(); else location.href = "about:blank";
+  });
+  go.focus();
+}
+spoilerGate(D.title);
 
 syncControls();
 showIntro();

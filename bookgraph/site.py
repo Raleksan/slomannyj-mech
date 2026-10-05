@@ -156,7 +156,8 @@ class Site:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{head_title}</title>
 <link rel="stylesheet" href="{up}style.css">
-<script>try {{ const t = localStorage.getItem("bookgraph-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; }} catch (e) {{}}</script>
+<script>try {{ const t = localStorage.getItem("bookgraph-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; }} catch (e) {{}}
+try {{ if (localStorage.getItem("bookgraph-spoilers") !== "ok") document.documentElement.dataset.spoilers = ""; }} catch (e) {{ document.documentElement.dataset.spoilers = ""; }}</script>
 </head>
 <body>
 <header>

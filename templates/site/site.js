@@ -95,3 +95,30 @@
   dark.addEventListener("change", paint);
   paint();
 })();
+
+// The spoiler notice: covers the page until the reader agrees, once per browser.
+function spoilerGate(title) {
+  const root = document.documentElement;
+  if (!("spoilers" in root.dataset)) return;
+  const gate = document.createElement("div");
+  gate.className = "spoilers";
+  gate.innerHTML = `<div role="alertdialog" aria-modal="true" aria-labelledby="spoilers-title">
+    <h2 id="spoilers-title">Осторожно, спойлеры</h2>
+    <p>Здесь пересказана вся книга «${title.replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`)}» до последней главы:
+      повороты сюжета, судьбы персонажей, чем кончается каждая линия.</p>
+    <p>Если вы ещё читаете, лучше вернуться сюда потом.</p>
+    <div class="actions"><button class="go" type="button">Понятно, показать</button>
+      <button class="back" type="button">Назад</button></div></div>`;
+  document.body.appendChild(gate);
+  const go = gate.querySelector(".go");
+  go.addEventListener("click", () => {
+    try { localStorage.setItem("bookgraph-spoilers", "ok"); } catch (e) {}
+    delete root.dataset.spoilers;
+    gate.remove();
+  });
+  gate.querySelector(".back").addEventListener("click", () => {
+    if (history.length > 1) history.back(); else location.href = "about:blank";
+  });
+  go.focus();
+}
+spoilerGate(document.querySelector(".book").textContent);

@@ -81,6 +81,24 @@ ul.index li { padding: 6px 0; border-bottom: 1px solid var(--border); }
 .button:hover { text-decoration: none; filter: brightness(1.08); }
 .backlinks { margin-top: 40px; font-size: 14px; }
 
+html[data-spoilers] body > *:not(.spoilers) { visibility: hidden; }
+.spoilers {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px;
+  background: var(--surface-0);
+}
+.spoilers > div {
+  max-width: 460px; padding: 24px; border-radius: 10px;
+  background: var(--surface-1); border: 1px solid var(--border); box-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+}
+.spoilers h2 { margin: 0 0 10px; font-size: 22px; border: 0; padding: 0; }
+.spoilers p { margin: 0 0 12px; color: var(--text-secondary); }
+.spoilers .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.spoilers button {
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; padding: 8px 16px;
+  border: 1px solid var(--border); background: var(--surface-0); color: var(--text-primary);
+}
+.spoilers button.go { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 @media (max-width: 640px) {
   header { position: static; }
   li[id] { scroll-margin-top: 12px; }
