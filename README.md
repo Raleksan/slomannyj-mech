@@ -1,7 +1,10 @@
 # book-graph
 
-A storyline graph and a linked Obsidian vault from a book, made by a local
-LLM (Qwen3.8-27B, abliterated) on a rented GPU.
+A storyline graph, a linked Obsidian vault and a website from a book,
+made by a local LLM (Qwen3.8-27B, abliterated) on a rented GPU.
+
+The first book, «Сломанный Меч», as a website (spoilers for the whole
+book): https://raleksan.github.io/slomannyj-mech/
 
 ## Stages
 
