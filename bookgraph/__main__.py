@@ -5,6 +5,10 @@
   bookgraph calibrate NAME             measure chars/token with the model, rechunk
   bookgraph extract NAME [-c 1-3] [-j 8]
                                        facts per chunk into work/NAME/extract/
+  bookgraph resolve NAME [-j 8]        one entity per person/place/group: entities.json
+  bookgraph thread NAME [-j 8]         storylines and cross-chapter links: threads.json
+  bookgraph summarize NAME [-j 8]      note texts into work/NAME/notes/
+  bookgraph render NAME                vault and graph.html into out/NAME/
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
@@ -79,6 +83,31 @@ def cmd_progress(args) -> None:
         time.sleep(args.watch)
 
 
+def cmd_resolve(args) -> None:
+    from . import resolve
+
+    asyncio.run(resolve.run(args.book, args.jobs))
+
+
+def cmd_thread(args) -> None:
+    from . import thread
+
+    asyncio.run(thread.run(args.book, args.jobs))
+
+
+def cmd_summarize(args) -> None:
+    from . import summarize
+
+    asyncio.run(summarize.run(args.book, args.jobs))
+
+
+def cmd_render(args) -> None:
+    from . import graph, vault
+
+    vault.run(args.book)
+    graph.run(args.book)
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -101,7 +130,7 @@ def main(argv=None) -> None:
     p = sub.add_parser("parse")
     p.add_argument("path")
     p.set_defaults(func=cmd_parse)
-    for name, func in (("chunk", cmd_chunk), ("calibrate", cmd_calibrate), ("stats", cmd_stats)):
+    for name, func in (("chunk", cmd_chunk), ("calibrate", cmd_calibrate), ("stats", cmd_stats), ("render", cmd_render)):
         p = sub.add_parser(name)
         p.add_argument("book")
         p.set_defaults(func=func)
@@ -111,6 +140,18 @@ def main(argv=None) -> None:
     p.add_argument("-j", "--jobs", type=int, default=8,
                    help="requests at once; match llama-server --parallel")
     p.set_defaults(func=cmd_extract)
+    p = sub.add_parser("resolve")
+    p.add_argument("book")
+    p.add_argument("-j", "--jobs", type=int, default=8)
+    p.set_defaults(func=cmd_resolve)
+    p = sub.add_parser("thread")
+    p.add_argument("book")
+    p.add_argument("-j", "--jobs", type=int, default=8)
+    p.set_defaults(func=cmd_thread)
+    p = sub.add_parser("summarize")
+    p.add_argument("book")
+    p.add_argument("-j", "--jobs", type=int, default=8)
+    p.set_defaults(func=cmd_summarize)
     p = sub.add_parser("progress")
     p.add_argument("book")
     p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",

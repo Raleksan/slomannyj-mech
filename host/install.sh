@@ -90,6 +90,8 @@ for _ in $(seq 120); do
 done
 curl -fsS http://127.0.0.1:8080/health
 echo
-journalctl -u llama-server --no-pager | grep -E "KV self size|kv_cache|n_ctx_seq|CUDA0 (model|KV|compute) buffer|model type|n_layer|general.architecture" | tail -12
+journalctl -u llama-server --no-pager \
+  | grep -E "model buffer size|KV buffer size|compute buffer size|n_ctx_seq|n_ctx_slot|general.architecture|print_info: (n_layer|n_head_kv|n_embd_head_k|model type)" \
+  | tail -14 || true
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv
 step "done"

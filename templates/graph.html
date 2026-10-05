@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}} — граф сюжета</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3f0;
+  --surface-1: #fcfcfb;
+  --surface-2: #efeee9;
+  --border: #dddcd5;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --accent: #2a78d6;
+  --neutral: #a8a7a0;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #252523; --border: #383835;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --accent: #3987e5; --neutral: #6b6a64;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #252523; --border: #383835;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --accent: #3987e5; --neutral: #6b6a64;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column;
+}
+header {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  padding: 12px 16px 8px; background: var(--surface-1); border-bottom: 1px solid var(--border);
+}
+h1 { font-size: 18px; margin: 0; }
+.byline { color: var(--text-secondary); }
+.tabs { margin-left: auto; display: flex; gap: 4px; }
+button, select, input {
+  font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+}
+button { cursor: pointer; }
+button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); }
+.filters {
+  display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+  padding: 8px 16px; background: var(--surface-1); border-bottom: 1px solid var(--border);
+}
+.filters label { color: var(--text-secondary); display: flex; gap: 6px; align-items: center; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 6px 6px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px; background: var(--surface-1); border-bottom: 1px solid var(--border); }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 6px;
+  border: 1px solid var(--border); border-radius: 999px; cursor: pointer; color: var(--text-primary);
+  background: var(--surface-1); font-size: 13px;
+}
+.chip .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.chip[data-off="true"] { opacity: .4; }
+.chip .n { color: var(--text-muted); }
+main { flex: 1; display: flex; min-height: 0; }
+#stage { flex: 1; position: relative; min-width: 0; }
+#cy { position: absolute; inset: 0; background: var(--surface-1); }
+#table { position: absolute; inset: 0; overflow: auto; background: var(--surface-1); display: none; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { position: sticky; top: 0; background: var(--surface-2); color: var(--text-secondary); font-weight: 600; }
+tr:hover td { background: var(--surface-2); cursor: pointer; }
+aside {
+  width: 360px; flex: none; overflow: auto; padding: 16px; background: var(--surface-1);
+  border-left: 1px solid var(--border);
+}
+aside h2 { font-size: 16px; margin: 0 0 4px; }
+aside .meta { color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; }
+aside p { margin: 8px 0; }
+aside h3 { font-size: 13px; color: var(--text-secondary); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+aside ul { margin: 0; padding-left: 18px; }
+aside li { margin: 3px 0; }
+a, .linkish { color: var(--accent); cursor: pointer; text-decoration: none; }
+a:hover, .linkish:hover { text-decoration: underline; }
+.obs { display: inline-block; margin-top: 8px; }
+.hint { color: var(--text-muted); }
+#tip {
+  position: absolute; pointer-events: none; display: none; max-width: 320px; z-index: 5;
+  background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+#tip .sub { color: var(--text-secondary); }
+@media (max-width: 760px) {
+  main { flex-direction: column; }
+  #stage { min-height: 60vh; }
+  aside { width: auto; border-left: 0; border-top: 1px solid var(--border); }
+  .tabs { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1><span class="byline" id="byline"></span>
+  <div class="tabs" role="tablist">
+    <button data-view="plot" aria-pressed="true">Сюжет</button>
+    <button data-view="cast" aria-pressed="false">Персонажи</button>
+    <button data-view="table" aria-pressed="false">Список</button>
+  </div>
+</header>
+<div class="filters">
+  <label>Важность
+    <span class="seg" id="imp">
+      <button data-imp="1" aria-pressed="false">все</button>
+      <button data-imp="2" aria-pressed="true">заметные</button>
+      <button data-imp="3" aria-pressed="false">повороты</button>
+    </span>
+  </label>
+  <label>Главы <select id="from"></select> — <select id="to"></select></label>
+  <label>Персонаж <input id="who" list="people" placeholder="любой" size="18"></label>
+  <datalist id="people"></datalist>
+  <label>Поиск <input id="q" type="search" placeholder="слово в событии" size="18"></label>
+</div>
+<div class="legend" id="legend"></div>
+<main>
+  <div id="stage"><div id="cy"></div><div id="table"></div><div id="tip"></div></div>
+  <aside id="panel"></aside>
+</main>
+<script>/*CYTOSCAPE*/</script>
+<script>
+const D = /*DATA*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const byEvent = Object.fromEntries(D.events.map((e, i) => [e.id, {...e, order: i}]));
+const byLine = Object.fromEntries(D.storylines.map(s => [s.id, s]));
+const byChar = Object.fromEntries(D.characters.map(c => [c.id, c]));
+const nameOf = id => D.names[id] || id;
+const idByName = Object.fromEntries(Object.entries(D.names).map(([id, n]) => [n.toLowerCase(), id]));
+const incoming = {}, outgoing = {};
+for (const x of D.edges) {
+  (incoming[x.t] ||= []).push(x);
+  (outgoing[x.s] ||= []).push(x);
+}
+const NONE = "__none";
+
+const state = {
+  view: "plot", imp: 2, from: 0, to: D.chapters.length - 1,
+  who: null, q: "", off: new Set(),
+};
+
+// Header, filters, legend.
+$("#title").textContent = D.title;
+$("#byline").textContent = D.author;
+for (const sel of [$("#from"), $("#to")]) {
+  sel.innerHTML = D.chapters.map((c, i) => `<option value="${i}">${esc(c.title)}</option>`).join("");
+}
+$("#to").value = state.to;
+$("#people").innerHTML = D.characters.map(c => `<option value="${esc(c.name)}">`).join("");
+
+function color(slot) { return slot ? css(`--series-${slot}`) : css("--neutral"); }
+function lineColor(id) { return id === NONE ? css("--neutral") : color(byLine[id].slot); }
+
+function renderLegend() {
+  const chips = D.storylines.map(s =>
+    `<span class="chip" data-line="${s.id}" data-off="${state.off.has(s.id)}" title="${esc(s.description)}">
+       <span class="sw" style="background:${color(s.slot)}"></span>${esc(s.name)} <span class="n">${s.events}</span></span>`);
+  chips.push(`<span class="chip" data-line="${NONE}" data-off="${state.off.has(NONE)}">
+       <span class="sw" style="background:${css("--neutral")}"></span>Без линии</span>`);
+  $("#legend").innerHTML = chips.join("") +
+    ` <button id="all">все линии</button> <button id="nolines">ни одной</button>`;
+}
+
+function visibleEvents() {
+  const q = state.q.toLowerCase();
+  return D.events.filter(e =>
+    e.imp >= state.imp && e.ch >= state.from && e.ch <= state.to &&
+    (e.sl.length ? e.sl.some(s => !state.off.has(s)) : !state.off.has(NONE)));
+}
+function matches(e) {
+  if (state.who && !e.who.includes(state.who)) return false;
+  if (state.q) {
+    const q = state.q.toLowerCase();
+    if (!(e.title + " " + e.what).toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+const focused = () => state.who || state.q;
+
+// Cytoscape.
+const cy = cytoscape({
+  container: $("#cy"), wheelSensitivity: 0.25, minZoom: 0.05, maxZoom: 3,
+  boxSelectionEnabled: false, autoungrabify: false,
+});
+
+function styles() {
+  const ink = css("--text-primary"), ink2 = css("--text-secondary"), muted = css("--text-muted");
+  const surface = css("--surface-1"), accent = css("--accent");
+  return [
+    {selector: "node.ev", style: {
+      "background-color": "data(color)", width: "data(size)", height: "data(size)",
+      "border-width": 2, "border-color": surface, label: "data(label)", "font-size": 10,
+      color: ink2, "text-valign": "bottom", "text-margin-y": 3, "text-wrap": "ellipsis",
+      "text-max-width": 110, "min-zoomed-font-size": 8,
+    }},
+    {selector: "node.ev.major", style: {"font-size": 11, color: ink, "font-weight": 600}},
+    {selector: "node.lane", style: {
+      shape: "rectangle", width: 1, height: 1, "background-opacity": 0, label: "data(label)",
+      "text-halign": "left", "text-valign": "center", "font-size": 13, "font-weight": 600,
+      color: ink, "text-margin-x": -6, events: "yes",
+    }},
+    {selector: "node.chap", style: {
+      shape: "rectangle", width: 1, height: 1, "background-opacity": 0, label: "data(label)",
+      "font-size": 11, color: muted, "text-valign": "top", events: "yes",
+    }},
+    {selector: "edge.thread", style: {
+      width: 2, "line-color": "data(color)", opacity: 0.35, "curve-style": "straight", events: "no",
+    }},
+    {selector: "edge.link", style: {
+      width: 1.5, "line-color": ink2, "target-arrow-color": ink2, "target-arrow-shape": "triangle",
+      "arrow-scale": 0.8, "curve-style": "unbundled-bezier", "control-point-distances": [-40],
+      opacity: 0.55,
+    }},
+    {selector: "edge.link[type = 'продолжение']", style: {"line-style": "dashed"}},
+    {selector: "edge.link[type = 'параллель']", style: {"line-style": "dotted", "target-arrow-shape": "none"}},
+    {selector: "edge.link[type = 'развязка']", style: {"target-arrow-shape": "tee"}},
+    {selector: "node.person", style: {
+      "background-color": css("--series-1"), width: "data(size)", height: "data(size)",
+      "border-width": 2, "border-color": surface, label: "data(label)", color: ink,
+      "font-size": 12, "text-valign": "bottom", "text-margin-y": 3, "min-zoomed-font-size": 7,
+    }},
+    {selector: "edge.tie", style: {
+      width: "data(w)", "line-color": muted, opacity: 0.35, "curve-style": "haystack",
+    }},
+    {selector: ".faded", style: {opacity: 0.12}},
+    {selector: "edge.faded", style: {opacity: 0.05}},
+    {selector: ".hl", style: {opacity: 1}},
+    {selector: "node.sel", style: {"border-color": accent, "border-width": 4, opacity: 1}},
+    {selector: "edge.sel", style: {"line-color": accent, "target-arrow-color": accent, opacity: 1, width: 2.5}},
+  ];
+}
+
+function sizeOf(imp) { return imp === 3 ? 26 : imp === 2 ? 16 : 10; }
+
+function drawPlot() {
+  const evs = visibleEvents();
+  const lanes = [];
+  const laneOf = {};
+  const counts = {};
+  for (const e of evs) {
+    const l = e.sl.find(s => !state.off.has(s)) || NONE;
+    laneOf[e.id] = l;
+    counts[l] = (counts[l] || 0) + 1;
+  }
+  for (const s of D.storylines) if (counts[s.id]) lanes.push(s.id);
+  if (counts[NONE]) lanes.push(NONE);
+  const laneY = Object.fromEntries(lanes.map((l, i) => [l, i * 80]));
+  const els = [];
+  let x = 0, lastCh = -1;
+  const chapterX = [];
+  const lastInLane = {};
+  for (const e of evs) {
+    if (e.ch !== lastCh) {
+      x += lastCh < 0 ? 0 : 50;
+      chapterX.push([e.ch, x]);
+      lastCh = e.ch;
+    }
+    const l = laneOf[e.id];
+    els.push({group: "nodes", classes: "ev" + (e.imp === 3 ? " major" : ""),
+      data: {id: e.id, label: e.imp >= 2 ? e.title : "", color: lineColor(l), size: sizeOf(e.imp)},
+      position: {x, y: laneY[l]}});
+    if (lastInLane[l]) {
+      els.push({group: "edges", classes: "thread", data: {id: "t" + e.id, source: lastInLane[l], target: e.id, color: lineColor(l)}});
+    }
+    lastInLane[l] = e.id;
+    x += 46;
+  }
+  const shown = new Set(evs.map(e => e.id));
+  for (const [i, ed] of D.edges.entries()) {
+    if (shown.has(ed.s) && shown.has(ed.t)) {
+      els.push({group: "edges", classes: "link", data: {id: "l" + i, source: ed.s, target: ed.t, type: ed.type}});
+    }
+  }
+  for (const l of lanes) {
+    els.push({group: "nodes", classes: "lane", data: {id: "lane-" + l, line: l,
+      label: l === NONE ? "Без линии" : byLine[l].name}, position: {x: -30, y: laneY[l]}});
+  }
+  for (const [ch, cx] of chapterX) {
+    const t = D.chapters[ch].title.replace(/^Глава\s*/, "Гл. ");
+    els.push({group: "nodes", classes: "chap", data: {id: "chap-" + ch, ch, label: t}, position: {x: cx, y: -60}});
+  }
+  cy.elements().remove();
+  cy.add(els);
+  cy.nodes().ungrabify();
+  cy.style(styles());
+  applyFocus();
+  cy.fit(undefined, 40);
+}
+
+function drawCast() {
+  const evs = visibleEvents();
+  const cast = new Set(D.cast);
+  const count = {}, ties = {};
+  for (const e of evs) {
+    const who = e.who.filter(w => cast.has(w));
+    for (const w of who) count[w] = (count[w] || 0) + 1;
+    for (let i = 0; i < who.length; i++) for (let j = i + 1; j < who.length; j++) {
+      const k = who[i] < who[j] ? who[i] + "|" + who[j] : who[j] + "|" + who[i];
+      ties[k] = (ties[k] || 0) + 1;
+    }
+  }
+  const people = Object.keys(count).sort((a, b) => count[b] - count[a]).slice(0, 60);
+  const keep = new Set(people);
+  const els = people.map(id => ({group: "nodes", classes: "person",
+    data: {id, label: nameOf(id), size: 12 + 5 * Math.sqrt(count[id]), n: count[id]}}));
+  const pairs = Object.entries(ties).filter(([k, w]) => {
+    const [a, b] = k.split("|");
+    return keep.has(a) && keep.has(b) && w >= 2;
+  });
+  for (const [k, w] of pairs) {
+    const [a, b] = k.split("|");
+    els.push({group: "edges", classes: "tie", data: {id: "w" + k, source: a, target: b, n: w, w: Math.min(1 + Math.log2(w) * 1.5, 9)}});
+  }
+  cy.elements().remove();
+  cy.add(els);
+  cy.style(styles());
+  cy.layout({name: "cose", animate: false, nodeRepulsion: () => 90000, idealEdgeLength: e => 160 / Math.sqrt(e.data("n")),
+    edgeElasticity: e => 60 * e.data("n"), gravity: 0.6, numIter: 2500, randomize: true}).run();
+  applyFocus();
+  cy.fit(undefined, 40);
+}
+
+function drawTable() {
+  const evs = visibleEvents().filter(matches);
+  const rows = evs.map(e => `<tr data-ev="${e.id}"><td>${esc(D.chapters[e.ch].title)}</td>
+    <td><b>${esc(e.title)}</b><br><span class="hint">${esc(e.what)}</span></td>
+    <td>${"●".repeat(e.imp)}</td>
+    <td>${e.sl.map(s => esc(byLine[s]?.name)).join(", ")}</td>
+    <td>${e.who.map(w => esc(nameOf(w))).join(", ")}</td></tr>`);
+  $("#table").innerHTML = `<table><thead><tr><th>Глава</th><th>Событие</th><th>Важность</th><th>Линии</th><th>Персонажи</th></tr></thead>
+    <tbody>${rows.join("") || `<tr><td colspan="5" class="hint">Нет событий под эти фильтры</td></tr>`}</tbody></table>`;
+}
+
+function applyFocus() {
+  cy.elements().removeClass("faded hl");
+  if (!focused()) return;
+  if (state.view === "plot") {
+    const hit = cy.nodes(".ev").filter(n => matches(byEvent[n.id()]));
+    cy.elements(".ev, .link, .thread").not(hit).addClass("faded");
+    hit.connectedEdges(".link").removeClass("faded");
+  } else if (state.who) {
+    const n = cy.getElementById(state.who);
+    if (n.nonempty()) {
+      cy.elements().addClass("faded");
+      n.closedNeighborhood().removeClass("faded");
+    }
+  }
+}
+
+function redraw() {
+  $("#cy").style.display = state.view === "table" ? "none" : "block";
+  $("#table").style.display = state.view === "table" ? "block" : "none";
+  if (state.view === "plot") drawPlot();
+  else if (state.view === "cast") drawCast();
+  else drawTable();
+}
+
+// Details panel.
+function obs(uri) { return uri ? `<a class="obs" href="${esc(uri)}">Открыть в Obsidian →</a>` : ""; }
+function evLink(id) { const e = byEvent[id]; return `<span class="linkish" data-ev="${id}">${esc(e.title)}</span> <span class="hint">(${esc(D.chapters[e.ch].title)})</span>`; }
+function whoLink(id) { return byChar[id] ? `<span class="linkish" data-who="${id}">${esc(nameOf(id))}</span>` : esc(nameOf(id)); }
+
+function showEvent(id) {
+  const e = byEvent[id];
+  const ins = (incoming[id] || []).map(x => `<li>${esc(x.type)} ← ${evLink(x.s)}${x.why ? ` <span class="hint">— ${esc(x.why)}</span>` : ""}</li>`);
+  const outs = (outgoing[id] || []).map(x => `<li>${esc(x.type)} → ${evLink(x.t)}${x.why ? ` <span class="hint">— ${esc(x.why)}</span>` : ""}</li>`);
+  $("#panel").innerHTML = `<h2>${esc(e.title)}</h2>
+    <div class="meta">${esc(D.chapters[e.ch].title)} · ${esc(e.kind)} · важность ${e.imp}${e.where ? " · " + esc(e.where) : ""}</div>
+    <p>${esc(e.what)}</p>
+    ${e.who.length ? `<h3>Участники</h3><p>${e.who.map(whoLink).join(", ")}</p>` : ""}
+    ${e.sl.length ? `<h3>Сюжетные линии</h3><p>${e.sl.map(s => `<span class="linkish" data-line-info="${s}">${esc(byLine[s].name)}</span>`).join(", ")}</p>` : ""}
+    ${ins.length ? `<h3>Откуда</h3><ul>${ins.join("")}</ul>` : ""}
+    ${outs.length ? `<h3>Куда ведёт</h3><ul>${outs.join("")}</ul>` : ""}
+    ${obs(e.uri)}`;
+  select(id);
+}
+
+function showCharacter(id) {
+  const c = byChar[id];
+  const evs = D.events.filter(e => e.who.includes(id) && e.imp === 3);
+  $("#panel").innerHTML = `<h2>${esc(c.name)}</h2>
+    <div class="meta">во фрагментах: ${c.mentions}</div>
+    <p>${esc(c.about)}</p>
+    <p><span class="linkish" data-filter-who="${id}">Показать события персонажа на сюжете</span></p>
+    ${evs.length ? `<h3>Поворотные события</h3><ul>${evs.slice(0, 25).map(e => `<li>${evLink(e.id)}</li>`).join("")}</ul>` : ""}
+    ${obs(c.uri)}`;
+  select(id);
+}
+
+function showLine(id) {
+  if (id === NONE) {
+    $("#panel").innerHTML = `<h2>Без линии</h2><p class="hint">События, которые не отнесены ни к одной сюжетной линии.</p>`;
+    return;
+  }
+  const s = byLine[id];
+  const major = D.events.filter(e => e.sl.includes(id) && e.imp === 3);
+  $("#panel").innerHTML = `<h2>${esc(s.name)}</h2><div class="meta">событий: ${s.events}</div>
+    <p>${esc(s.description)}</p>
+    ${major.length ? `<h3>Поворотные события</h3><ul>${major.slice(0, 25).map(e => `<li>${evLink(e.id)}</li>`).join("")}</ul>` : ""}
+    ${obs(s.uri)}`;
+}
+
+function showChapter(i) {
+  const c = D.chapters[i];
+  $("#panel").innerHTML = `<h2>${esc(c.title)}</h2><p>${esc(c.oneline)}</p>${obs(c.uri)}`;
+}
+
+function showIntro() {
+  $("#panel").innerHTML = `<h2>${esc(D.title)}</h2>
+    <div class="meta">${D.chapters.length} глав · ${D.events.length} событий · ${D.storylines.length} сюжетных линий · ${D.edges.length} связей</div>
+    <p class="hint">«Сюжет»: каждая строка — сюжетная линия, события идут слева направо в порядке книги.
+    Стрелки — причины (→), продолжения (пунктир), развязки (⊣) и переклички (точки).
+    Крупные точки — поворотные события.</p>
+    <p class="hint">«Персонажи»: связи по общим событиям в выбранных главах. «Список» — те же события таблицей.</p>
+    <p class="hint">Щёлкните по событию, персонажу, линии или главе, чтобы увидеть подробности и открыть заметку в Obsidian.</p>`;
+}
+
+function select(id) {
+  cy.elements().removeClass("sel");
+  const n = cy.getElementById(id);
+  if (n.nonempty()) {
+    n.addClass("sel");
+    n.connectedEdges(".link").addClass("sel");
+  }
+}
+
+function focusEvent(id) {
+  const e = byEvent[id];
+  if (state.view !== "plot") setView("plot");
+  if (!cy.getElementById(id).nonempty()) {
+    // Widen the filters so the event is on screen.
+    state.imp = Math.min(state.imp, e.imp);
+    state.from = Math.min(state.from, e.ch);
+    state.to = Math.max(state.to, e.ch);
+    e.sl.forEach(s => state.off.delete(s));
+    syncControls();
+    redraw();
+  }
+  const n = cy.getElementById(id);
+  cy.animate({center: {eles: n}, zoom: Math.max(cy.zoom(), 0.9)}, {duration: 300});
+  showEvent(id);
+}
+
+// Wiring.
+cy.on("tap", "node.ev", ev => showEvent(ev.target.id()));
+cy.on("tap", "node.person", ev => showCharacter(ev.target.id()));
+cy.on("tap", "node.lane", ev => showLine(ev.target.data("line")));
+cy.on("tap", "node.chap", ev => showChapter(ev.target.data("ch")));
+const tip = $("#tip");
+cy.on("mouseover", "node.ev, node.person", ev => {
+  const n = ev.target;
+  if (n.hasClass("ev")) {
+    const e = byEvent[n.id()];
+    tip.innerHTML = `<b>${esc(e.title)}</b><div class="sub">${esc(D.chapters[e.ch].title)}${e.who.length ? " · " + e.who.slice(0, 4).map(nameOf).map(esc).join(", ") : ""}</div>`;
+  } else {
+    tip.innerHTML = `<b>${esc(n.data("label"))}</b><div class="sub">событий в выбранных главах: ${n.data("n")}</div>`;
+  }
+  const p = n.renderedPosition();
+  tip.style.left = Math.min(p.x + 14, $("#stage").clientWidth - 330) + "px";
+  tip.style.top = (p.y + 14) + "px";
+  tip.style.display = "block";
+});
+cy.on("mouseout", "node", () => { tip.style.display = "none"; });
+cy.on("viewport", () => { tip.style.display = "none"; });
+
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("[data-ev],[data-who],[data-line-info],[data-filter-who],[data-line],[data-view],[data-imp],#all,#nolines");
+  if (!t) return;
+  if (t.dataset.view) return setView(t.dataset.view);
+  if (t.dataset.imp) { state.imp = +t.dataset.imp; syncControls(); return redraw(); }
+  if (t.id === "all") { state.off.clear(); renderLegend(); return redraw(); }
+  if (t.id === "nolines") { D.storylines.forEach(s => state.off.add(s.id)); state.off.add(NONE); renderLegend(); return redraw(); }
+  if (t.dataset.line) {
+    const l = t.dataset.line;
+    state.off.has(l) ? state.off.delete(l) : state.off.add(l);
+    renderLegend(); showLine(l); return redraw();
+  }
+  if (t.dataset.ev) return focusEvent(t.dataset.ev);
+  if (t.dataset.who) return showCharacter(t.dataset.who);
+  if (t.dataset.lineInfo) return showLine(t.dataset.lineInfo);
+  if (t.dataset.filterWho) {
+    state.who = t.dataset.filterWho;
+    $("#who").value = nameOf(state.who);
+    return setView("plot");
+  }
+});
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === v));
+  redraw();
+}
+function syncControls() {
+  document.querySelectorAll("[data-imp]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.imp === state.imp));
+  $("#from").value = state.from;
+  $("#to").value = state.to;
+  renderLegend();
+}
+$("#from").addEventListener("change", e => { state.from = +e.target.value; if (state.to < state.from) state.to = state.from; syncControls(); redraw(); });
+$("#to").addEventListener("change", e => { state.to = +e.target.value; if (state.from > state.to) state.from = state.to; syncControls(); redraw(); });
+$("#who").addEventListener("change", e => {
+  state.who = idByName[e.target.value.trim().toLowerCase()] || null;
+  if (!state.who) e.target.value = "";
+  if (state.view === "table") drawTable(); else applyFocus();
+});
+let qTimer;
+$("#q").addEventListener("input", e => {
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => { state.q = e.target.value.trim(); state.view === "table" ? drawTable() : applyFocus(); }, 200);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { state.who = null; state.q = ""; $("#who").value = ""; $("#q").value = ""; applyFocus(); showIntro(); }
+});
+$("#stage").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-ev]");
+  if (tr) showEvent(tr.dataset.ev);
+});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderLegend(); redraw(); });
+
+syncControls();
+showIntro();
+redraw();
+</script>
+</body>
+</html>
