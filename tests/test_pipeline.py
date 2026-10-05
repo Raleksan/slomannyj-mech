@@ -134,3 +134,20 @@ class SiteMarkdown(unittest.TestCase):
         self.assertIn('<li id="ch001-01-e02">Обед — ссора<ul><li>', out)
         self.assertIn("</li></ul></li><li>Второе</li></ul><p>Текст</p>", out)
         self.assertNotIn("type: x", out)
+
+
+class Fix(unittest.TestCase):
+    def test_respell_keeps_endings_and_merges(self):
+        from bookgraph import fix
+
+        pats = fix.patterns([("Джон", "Жон")])
+        n = [0]
+        data = {"aliases": ["Жоном", "Джоном", "Аджонов"], "what": "Джону Арку и Джонс, не Джонатан Ли",
+                "index": {"characters:джон арк": "c1", "characters:жон арк": "c1"},
+                "scenes": [["* * *", "* * *"]]}
+        out = fix.respell(data, pats, n)
+        self.assertEqual(out["aliases"], ["Жоном", "Аджонов"])
+        self.assertEqual(out["what"], "Жону Арку и Жонс, не Жонатан Ли")
+        self.assertEqual(out["index"], {"characters:жон арк": "c1"})
+        self.assertEqual(out["scenes"], [["* * *", "* * *"]])
+        self.assertEqual(n[0], 5)

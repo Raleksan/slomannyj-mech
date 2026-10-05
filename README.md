@@ -19,6 +19,7 @@ own, so a run can stop and resume; the model stages cache every answer.
 | `summarize NAME` | yes | `notes/`: chapter, character, storyline, place and group texts, overview |
 | `render NAME` | no | `out/NAME/<title>/` Obsidian vault, `graph.html` beside it and inside it |
 | `site NAME [-o DIR]` | no | `out/NAME/site/`: the vault as a static website |
+| `fix NAME OLD=NEW` | no | respells a name in all of `work/NAME/`, in every case form; then render and site |
 
 `progress NAME [-w 10]` shows the running stage: done/total, ETA, tokens,
 GPU load and busy server slots, the most present characters so far.

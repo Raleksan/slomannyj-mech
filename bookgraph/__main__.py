@@ -10,6 +10,7 @@
   bookgraph summarize NAME [-j 8]      note texts into work/NAME/notes/
   bookgraph render NAME                vault and graph.html into out/NAME/
   bookgraph site NAME [-o DIR]         static website from the vault, out/NAME/site/
+  bookgraph fix NAME OLD=NEW ...       respell a name the model got wrong, in all work data
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
@@ -115,6 +116,18 @@ def cmd_site(args) -> None:
     site.run(args.book, Path(args.out) if args.out else None)
 
 
+def cmd_fix(args) -> None:
+    from . import fix
+
+    pairs = []
+    for pair in args.pairs:
+        old, sep, new = pair.partition("=")
+        if not sep or not old or not new:
+            sys.exit(f"fix: expected OLD=NEW, got {pair!r}")
+        pairs.append((old, new))
+    fix.run(args.book, pairs)
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -163,6 +176,10 @@ def main(argv=None) -> None:
     p.add_argument("book")
     p.add_argument("-o", "--out", help="where to write the site; default out/NAME/site")
     p.set_defaults(func=cmd_site)
+    p = sub.add_parser("fix")
+    p.add_argument("book")
+    p.add_argument("pairs", nargs="+", metavar="OLD=NEW", help="word stems, as Джон=Жон")
+    p.set_defaults(func=cmd_fix)
     p = sub.add_parser("progress")
     p.add_argument("book")
     p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",
