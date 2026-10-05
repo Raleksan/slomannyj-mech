@@ -3,8 +3,13 @@
 BOOKGRAPH_LLM sets the base URL, by default http://127.0.0.1:8080, which is
 where host/install.sh puts llama-server; reach a remote one through
 ssh -L 8080:127.0.0.1:8080. Each call asks for JSON matching a pydantic
-model, which llama-server enforces with a grammar, and validates the answer
-again here; a bad answer is retried.
+model and validates the answer here; a bad answer is retried.
+
+BOOKGRAPH_GRAMMAR picks what llama-server enforces while it generates:
+"json" (default) only valid JSON syntax, with the schema in the system
+prompt; "schema" the full schema as a grammar. On the A100 with Qwen3.8 the
+full grammar cost about 30% of generation speed at 8 parallel requests,
+and plain JSON mode costs nothing measurable.
 """
 
 import asyncio
@@ -17,6 +22,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 BASE = os.environ.get("BOOKGRAPH_LLM", "http://127.0.0.1:8080").rstrip("/")
+GRAMMAR = os.environ.get("BOOKGRAPH_GRAMMAR", "json")
 RETRIES = 3
 T = TypeVar("T", bound=BaseModel)
 
@@ -50,16 +56,20 @@ class Client:
     async def ask(self, model: type[T], system: str, user: str, *,
                   think: bool = False, max_tokens: int = 4096,
                   temperature: float = 0.3) -> T:
+        schema = model.model_json_schema()
+        if GRAMMAR == "schema":
+            fmt = {"type": "json_schema", "json_schema": {"name": model.__name__, "schema": schema}}
+        else:
+            fmt = {"type": "json_object"}
+            system += ("\n\nJSON Schema ответа (соблюдай имена полей и типы точно):\n"
+                       + json.dumps(schema, ensure_ascii=False, separators=(",", ":")))
         body = {
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": user}],
             "temperature": temperature,
             "top_p": 0.9,
             "max_tokens": max_tokens,
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {"name": model.__name__, "schema": model.model_json_schema()},
-            },
+            "response_format": fmt,
             # Qwen's chat template reads this; other templates ignore it.
             "chat_template_kwargs": {"enable_thinking": think},
         }

@@ -60,7 +60,19 @@ def lemma(word: str) -> str:
     for p in parses:
         if {"Name", "Surn", "Patr", "Geox"} & set(p.tag.grammemes):
             return p.normal_form.replace("ё", "е")
-    return parses[0].normal_form.replace("ё", "е")
+    # Unknown names get odd verb readings ("Ансел" -> "ансест"); keep those as written.
+    for p in parses:
+        if p.tag.POS in ("NOUN", "ADJF"):
+            return p.normal_form.replace("ё", "е")
+    return word
+
+
+def is_alias(form: str, name: str) -> bool:
+    """A name form worth listing: capitalized, not the name itself, not a title.
+
+    Drops the descriptions chunks also report as forms ("брат", "старик").
+    """
+    return form != name and form[:1].isupper() and key(form) not in TITLES
 
 
 def words(name: str) -> list[str]:
@@ -91,7 +103,7 @@ def collect(book: str, kind: str) -> dict[str, dict]:
     return groups
 
 
-ENDINGS = re.compile(r"(ами|ями|ого|его|ому|ему|ой|ей|ом|ем|ам|ям|ах|ях|а|я|у|ю|е|ы|и|о)$")
+ENDINGS = re.compile(r"(ами|ями|ого|его|ому|ему|ой|ей|ом|ем|ам|ям|ах|ях|ь|й|а|я|у|ю|е|ы|и|о)$")
 
 
 def stem(token: str) -> str:
@@ -183,7 +195,7 @@ async def run(book: str, concurrency: int) -> None:
                 for k in keys:
                     aliases.update(groups[k]["names"])
                     aliases.update({f: 1 for f in groups[k]["forms"]})
-                entities.append({"name": name, "aliases": sorted(a for a in aliases if a != name),
+                entities.append({"name": name, "aliases": sorted(a for a in aliases if is_alias(a, name)),
                                  "keys": keys, "mentions": len(chunks), "chunks": chunks,
                                  "about": [a for k in keys for a in groups[k]["about"]][:5]})
             entities.sort(key=lambda e: (-e["mentions"], e["name"]))

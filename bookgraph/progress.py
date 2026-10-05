@@ -101,7 +101,7 @@ def show(book: str, base: str) -> str:
     rate = finished / elapsed if elapsed > 0 and finished else 0
     eta = (s["total"] - finished) / rate if rate else None
     lines.append(f"elapsed {span(elapsed)}" + (f", {rate * 3600:.0f} items/h" if rate else "")
-                 + (f", ETA {span(eta)} (about {(datetime.now() + timedelta(seconds=eta)):%H:%M})"
+                 + (f", ETA {span(eta)} (about {(datetime.now().astimezone() + timedelta(seconds=eta)):%H:%M %Z})"
                     if eta and not s["finished"] else ""))
     if s["gen_tokens"]:
         lines.append(f"tokens: {s['prompt_tokens']:,} read, {s['gen_tokens']:,} written, "
