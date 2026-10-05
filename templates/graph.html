@@ -100,7 +100,14 @@ aside {
   width: 360px; flex: none; overflow: auto; padding: 16px; background: var(--surface-1);
   border-left: 1px solid var(--border);
 }
-aside h2 { font-size: 16px; margin: 0 0 4px; }
+aside { position: relative; }
+aside[hidden] { display: none; }
+aside .close {
+  position: absolute; top: 8px; right: 8px; border: 0; background: none; padding: 2px 8px;
+  font-size: 22px; line-height: 1; color: var(--text-muted);
+}
+aside .close:hover { color: var(--text-primary); }
+aside h2 { font-size: 16px; margin: 0 0 4px; padding-right: 28px; }
 aside .meta { color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; }
 aside p { margin: 8px 0; }
 aside h3 { font-size: 13px; color: var(--text-secondary); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
@@ -151,6 +158,7 @@ html[data-spoilers] body > *:not(.spoilers) { visibility: hidden; }
     <button data-view="cast" aria-pressed="false">Персонажи</button>
     <button data-view="table" aria-pressed="false">Список</button>
   </div>
+  <button id="help" type="button" title="Как читать граф" aria-label="Как читать граф">?</button>
   <button class="theme" id="theme" type="button" aria-label="Сменить тему: день или ночь"></button>
 </header>
 <div class="filters">
@@ -170,7 +178,8 @@ html[data-spoilers] body > *:not(.spoilers) { visibility: hidden; }
   <div><button id="more" aria-expanded="false">ещё ▾</button><button id="all">все линии</button><button id="nolines">ни одной</button></div></div>
 <main>
   <div id="stage"><div id="cy"></div><div id="lanes"></div><div id="table"></div><div id="tip"></div></div>
-  <aside id="panel"></aside>
+  <aside id="side" hidden><button class="close" id="close" type="button" aria-label="Скрыть панель">×</button>
+    <div id="panel"></div></aside>
 </main>
 <script>/*CYTOSCAPE*/</script>
 <script>
@@ -193,7 +202,8 @@ const NONE = "__none";
 
 const state = {
   view: "plot", imp: 2, from: 0, to: D.chapters.length - 1,
-  who: null, q: "", off: new Set(),
+  who: null, q: "", off: new Set(D.default_lines.length
+    ? [...D.storylines.map(s => s.id).filter(id => !D.default_lines.includes(id)), NONE] : []),
 };
 
 // Header, filters, legend.
@@ -208,8 +218,11 @@ $("#people").innerHTML = D.characters.map(c => `<option value="${esc(c.name)}">`
 function color(slot) { return slot ? css(`--series-${slot}`) : css("--neutral"); }
 function lineColor(id) { return id === NONE ? css("--neutral") : color(byLine[id].slot); }
 
+// The storylines the page opens with come first, so the folded legend shows them.
+const legendOrder = [...D.storylines].sort((a, b) =>
+  !state.off.has(b.id) - !state.off.has(a.id));
 function renderLegend() {
-  const chips = D.storylines.map(s =>
+  const chips = legendOrder.map(s =>
     `<span class="chip" data-line="${s.id}" data-off="${state.off.has(s.id)}" title="${esc(s.description)}">
        <span class="sw" style="background:${color(s.slot)}"></span>${esc(s.name)} <span class="n">${s.events}</span></span>`);
   chips.push(`<span class="chip" data-line="${NONE}" data-off="${state.off.has(NONE)}">
@@ -619,13 +632,16 @@ function showChapter(i) {
 }
 
 function showIntro() {
-  $("#panel").innerHTML = `<h2>${esc(D.title)}</h2>
+  const shown = D.storylines.filter(s => !state.off.has(s.id)).length;
+  $("#panel").innerHTML = `<h2 class="intro">${esc(D.title)}</h2>
     <div class="meta">${D.chapters.length} глав · ${D.events.length} событий · ${D.storylines.length} сюжетных линий · ${D.edges.length} связей</div>
     <p class="hint">«Сюжет»: каждая строка — сюжетная линия, события идут слева направо в порядке книги.
     Стрелки — причины (→), продолжения (пунктир), развязки (⊣) и переклички (точки).
     Крупные точки — поворотные события.</p>
     <p class="hint">«Персонажи»: связи по общим событиям в выбранных главах. «Список» — те же события таблицей.</p>
-    <p class="hint">Щёлкните по событию, персонажу, линии или главе, чтобы увидеть подробности и {{OPEN_HINT}}.</p>`;
+    <p class="hint">Щёлкните по событию, персонажу, линии или главе, чтобы увидеть подробности и {{OPEN_HINT}}.</p>
+    ${shown < D.storylines.length ? `<p class="hint">Сейчас показаны линии: ${shown} из ${D.storylines.length}.
+      Остальные включаются щелчком в легенде или кнопкой «все линии».</p>` : ""}`;
 }
 
 function select(id) {
@@ -784,8 +800,24 @@ function spoilerGate(title) {
 }
 spoilerGate(D.title);
 
+// The side panel opens when something is picked and stays out of the way
+// until then; × hides it again, ? shows how to read the graph.
+const side = $("#side");
+function setPanel(open) {
+  if (side.hidden === !open) return;
+  side.hidden = !open;
+  cy.resize();
+  placeLanes();
+  if (open && matchMedia("(max-width: 760px)").matches) side.scrollIntoView({behavior: "smooth", block: "start"});
+}
+new MutationObserver(() => setPanel(true)).observe($("#panel"), {childList: true});
+$("#close").addEventListener("click", () => setPanel(false));
+$("#help").addEventListener("click", () => {
+  if (!side.hidden && $("#panel").querySelector(".intro")) setPanel(false);
+  else showIntro();
+});
+
 syncControls();
-showIntro();
 redraw();
 </script>
 </body>

@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from urllib.parse import quote
 
-from .store import ROOT
+from .store import ROOT, read_json, work_dir
 from .vault import Vault, out_dir, safe
 
 TEMPLATES = ROOT / "templates"
@@ -61,7 +61,22 @@ def build(book: str, link=obsidian_uri) -> dict:
         "edges": [{"s": x["src"], "t": x["dst"], "type": x["type"], "why": x["why"]}
                   for x in v.edges if x["src"] in v.by_event and x["dst"] in v.by_event],
         "cast": sorted(cast_ids),
+        "default_lines": default_lines(book, v),
     }
+
+
+def default_lines(book: str, v: Vault) -> list[str]:
+    """Storylines the plot opens with, from work/<book>/graph.json
+    ({"lines": [names]}); none listed means all of them."""
+    path = work_dir(book) / "graph.json"
+    if not path.exists():
+        return []
+    names = read_json(path).get("lines", [])
+    ids = {s["name"]: s["id"] for s in v.storylines}
+    missing = [n for n in names if n not in ids]
+    if missing:
+        print(f"graph: no such storylines in graph.json: {', '.join(missing)}")
+    return [ids[n] for n in names if n in ids]
 
 
 def page(data: dict, open_label: str = "Открыть в Obsidian →",
