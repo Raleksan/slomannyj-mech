@@ -64,8 +64,8 @@ ssh -N -L 8080:127.0.0.1:8080 Ubuntu@HOST &
 .venv/bin/python -m bookgraph extract slomannyj_mech -c 1-3
 ```
 
-`BOOKGRAPH_LLM` overrides the server URL. Tests, for the stages that need
-no model: `.venv/bin/python -m unittest discover tests`. `-c` counts chapters in reading
-order, not by title (in «Сломанный Меч», «Глава 72.1» is 72).
+`BOOKGRAPH_LLM` overrides the server URL. `-c` counts chapters in reading
+order, not by title (in «Сломанный Меч», «Глава 72.1» is 72). Tests, for
+the stages that need no model: `.venv/bin/python -m unittest discover tests`.
 
 Books go in `books/`, which git ignores, as do `work/` and `out/`.
