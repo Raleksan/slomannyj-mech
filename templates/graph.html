@@ -271,14 +271,21 @@ function styles() {
     {selector: "edge.link[type = 'продолжение']", style: {"line-style": "dashed"}},
     {selector: "edge.link[type = 'параллель']", style: {"line-style": "dotted", "target-arrow-shape": "none"}},
     {selector: "edge.link[type = 'развязка']", style: {"target-arrow-shape": "tee"}},
+    {selector: "node.cluster", style: {
+      shape: "round-rectangle", "background-color": "data(color)", "background-opacity": 0.07,
+      "border-width": 1, "border-color": "data(color)", "border-opacity": 0.45, padding: 28,
+      label: "data(label)", "text-valign": "top", "text-halign": "center", "text-margin-y": -6,
+      "font-size": 20, "font-weight": 600, color: ink2, "min-zoomed-font-size": 6,
+    }},
     {selector: "node.person", style: {
-      "background-color": css("--series-1"), width: "data(size)", height: "data(size)",
+      "background-color": "data(color)", width: "data(size)", height: "data(size)",
       "border-width": 2, "border-color": surface, label: "data(label)", color: ink,
-      "font-size": 12, "text-valign": "bottom", "text-margin-y": 3, "min-zoomed-font-size": 7,
+      "font-size": "mapData(n, 1, 200, 12, 36)", "text-valign": "bottom", "text-margin-y": 3, "min-zoomed-font-size": 7,
     }},
     {selector: "edge.tie", style: {
       width: "data(w)", "line-color": muted, opacity: 0.35, "curve-style": "haystack",
     }},
+    {selector: "edge.tie.across", style: {opacity: 0.12}},
     {selector: ".faded", style: {opacity: 0.12}},
     {selector: "edge.faded", style: {opacity: 0.05}},
     {selector: ".hl", style: {opacity: 1}},
@@ -365,6 +372,65 @@ function placeLanes() {
   });
 }
 
+// Louvain communities on a weighted, undirected graph: move each node to the
+// neighbouring community that raises modularity most, merge communities into
+// nodes, repeat while anything moves. nodes: ids, edges: [a, b, weight].
+// Returns {id: community index}, communities numbered by size.
+function louvain(nodes, edges) {
+  let adj = new Map(nodes.map(n => [n, new Map()]));
+  for (const [a, b, w] of edges) {
+    adj.get(a).set(b, (adj.get(a).get(b) || 0) + w);
+    adj.get(b).set(a, (adj.get(b).get(a) || 0) + w);
+  }
+  let member = new Map(nodes.map(n => [n, n]));  // original node -> current super-node
+  for (let level = 0; level < 10; level++) {
+    const ids = [...adj.keys()];
+    const k = new Map(ids.map(n => [n, [...adj.get(n)].reduce((t, [m, w]) => t + (m === n ? 2 * w : w), 0)]));
+    const m2 = [...k.values()].reduce((a, b) => a + b, 0);
+    if (!m2) break;
+    const comm = new Map(ids.map(n => [n, n]));
+    const tot = new Map(ids.map(n => [n, k.get(n)]));
+    let moved = false;
+    for (let pass = 0; pass < 20; pass++) {
+      let changed = false;
+      for (const n of ids) {
+        const own = comm.get(n);
+        tot.set(own, tot.get(own) - k.get(n));
+        const links = new Map();
+        for (const [m, w] of adj.get(n)) if (m !== n) links.set(comm.get(m), (links.get(comm.get(m)) || 0) + w);
+        let best = own, gain = (links.get(own) || 0) - tot.get(own) * k.get(n) / m2;
+        for (const [c, w] of links) {
+          const g = w - tot.get(c) * k.get(n) / m2;
+          if (g > gain + 1e-9) { best = c; gain = g; }
+        }
+        tot.set(best, tot.get(best) + k.get(n));
+        if (best !== own) { comm.set(n, best); changed = moved = true; }
+      }
+      if (!changed) break;
+    }
+    if (!moved) break;
+    const next = new Map([...new Set(comm.values())].map(c => [c, new Map()]));
+    for (const [n, nb] of adj) for (const [m, w] of nb) {
+      const a = comm.get(n), b = comm.get(m), row = next.get(a);
+      // Every link is seen from both ends; a self-loop only once.
+      row.set(b, (row.get(b) || 0) + (n === m ? w : w / (a === b ? 2 : 1)));
+    }
+    adj = next;
+    member = new Map([...member].map(([n, c]) => [n, comm.get(c)]));
+  }
+  const groups = {};
+  for (const [n, c] of member) (groups[c] = groups[c] || []).push(n);
+  const order = Object.values(groups).sort((a, b) => b.length - a.length);
+  const out = {};
+  order.forEach((g, i) => g.forEach(n => { out[n] = i; }));
+  return out;
+}
+
+let castClusters = [];
+// Group labels keep 14px on screen until that would pass LABEL_FONT units.
+const LABEL_FONT = 44;
+const labelFont = () => Math.min(Math.max(14 / cy.zoom(), 14), LABEL_FONT);
+
 function drawCast() {
   const evs = visibleEvents();
   const cast = new Set(D.cast);
@@ -379,24 +445,91 @@ function drawCast() {
   }
   const people = Object.keys(count).sort((a, b) => count[b] - count[a]).slice(0, 60);
   const keep = new Set(people);
-  const els = people.map(id => ({group: "nodes", classes: "person",
-    data: {id, label: nameOf(id), size: 12 + 5 * Math.sqrt(count[id]), n: count[id]}}));
-  const pairs = Object.entries(ties).filter(([k, w]) => {
-    const [a, b] = k.split("|");
-    return keep.has(a) && keep.has(b) && w >= 2;
-  });
-  for (const [k, w] of pairs) {
-    const [a, b] = k.split("|");
-    els.push({group: "edges", classes: "tie", data: {id: "w" + k, source: a, target: b, n: w, w: Math.min(1 + Math.log2(w) * 1.5, 9)}});
+  const pairs = Object.entries(ties).map(([k, w]) => [...k.split("|"), w])
+    .filter(([a, b, w]) => keep.has(a) && keep.has(b) && w >= 2);
+  // Cluster by how much two people belong together, not by raw counts: a
+  // protagonist shares events with everyone and would swallow every group.
+  const cluster = louvain(people, pairs.map(([a, b, w]) => [a, b, w / Math.sqrt(count[a] * count[b])]));
+  const sizes = {};
+  for (const id of people) sizes[cluster[id]] = (sizes[cluster[id]] || 0) + 1;
+  // Groups of one or two, and people with no ties, share one grey box.
+  const OTHERS = 99;
+  for (const id of people) if (sizes[cluster[id]] < 3) cluster[id] = OTHERS;
+  for (const c in sizes) sizes[c] = 0;
+  sizes[OTHERS] = 0;
+  for (const id of people) sizes[cluster[id]]++;
+  const boxed = c => sizes[c] > 0;
+  const colorOf = c => c < 7 ? css(`--series-${c + 1}`) : css("--neutral");
+  castClusters = [];
+  const els = [], boxes = [];
+  for (const c of Object.keys(sizes).map(Number).filter(c => sizes[c]).sort((a, b) => a - b)) {
+    if (!boxed(c)) continue;
+    const members = people.filter(id => cluster[id] === c);
+    castClusters[c] = members;
+    const label = c === OTHERS ? "Прочие"
+      : nameOf(members[0]) + (members.length > 1 ? ` и ещё ${members.length - 1}` : "");
+    boxes.push({group: "nodes", classes: "cluster", data: {id: "cl" + c, label, color: colorOf(c), c}});
+  }
+  for (const id of people) {
+    const c = cluster[id];
+    els.push({group: "nodes", classes: "person", data: {id, label: nameOf(id), color: colorOf(c),
+      size: 12 + 5 * Math.sqrt(count[id]), n: count[id]}});
+  }
+  for (const [a, b, w] of pairs) {
+    const across = cluster[a] !== cluster[b];
+    els.push({group: "edges", classes: across ? "tie across" : "tie",
+      data: {id: `w${a}|${b}`, source: a, target: b, n: w, across, w: Math.min(1 + Math.log2(w) * 1.5, 9)}});
   }
   cy.elements().remove();
   cy.add(els);
   cy.style(styles());
   $("#lanes").style.display = "none";
-  cy.layout({name: "cose", animate: false, nodeRepulsion: () => 90000, idealEdgeLength: e => 160 / Math.sqrt(e.data("n")),
-    edgeElasticity: e => 60 * e.data("n"), gravity: 0.6, numIter: 2500, randomize: true}).run();
+  // Each group is laid out on its own, then the groups are packed in rows
+  // shaped like the screen, so no two boxes overlap. The loners have no ties
+  // to hold them and go in a grid.
+  const PAD = 28, LABEL = LABEL_FONT + 10, GAP = 70;
+  // (cose cannot lay out a box's children alone, so the boxes come last.)
+  const groups = boxes.map(box => {
+    const c = box.data.c;
+    const kids = cy.collection(castClusters[c].map(id => cy.getElementById(id)));
+    if (c === OTHERS) {
+      const cols = Math.ceil(Math.sqrt(kids.length * 2));
+      kids.layout({name: "grid", cols, fit: false, avoidOverlap: true,
+        boundingBox: {x1: 0, y1: 0, w: cols * 90, h: Math.ceil(kids.length / cols) * 55}}).run();
+    } else {
+      kids.union(kids.edgesWith(kids)).layout({name: "cose", animate: false, randomize: true, fit: false,
+        numIter: 2500, nodeRepulsion: n => 80000 + 2000 * n.data("size"), nodeOverlap: 30,
+        idealEdgeLength: e => 55 + 50 / Math.sqrt(e.data("n")),
+        edgeElasticity: e => 40 * Math.sqrt(e.data("n")), gravity: 0.3}).run();
+    }
+    const bb = kids.boundingBox({includeLabels: true});
+    // Room for the label at its largest, LABEL_FONT, about 0.6 em a letter.
+    const labelW = box.data.label.length * 0.6 * LABEL_FONT;
+    return {c, kids, bb, w: Math.max(bb.w + 2 * PAD, labelW) + GAP, h: bb.h + 2 * PAD + LABEL + GAP};
+  });
+  const area = groups.reduce((t, g) => t + g.w * g.h, 0);
+  const rowWidth = Math.max(Math.sqrt(area * cy.width() / cy.height()), ...groups.map(g => g.w));
+  let x = 0, y = 0, rowH = 0;
+  for (const g of groups) {
+    if (x > 0 && x + g.w > rowWidth) { x = 0; y += rowH; rowH = 0; }
+    const dx = x + (g.w - GAP - g.bb.w) / 2 - g.bb.x1, dy = y + PAD + LABEL - g.bb.y1;
+    g.kids.positions(n => ({x: n.position("x") + dx, y: n.position("y") + dy}));
+    x += g.w;
+    rowH = Math.max(rowH, g.h);
+  }
+  cy.add(boxes);
+  for (const g of groups) g.kids.move({parent: "cl" + g.c});
   applyFocus();
   cy.fit(undefined, 40);
+  cy.nodes(".cluster").style("font-size", labelFont());
+}
+
+function showCluster(c) {
+  const members = castClusters[c] || [];
+  $("#panel").innerHTML = `<h2>${c === 99 ? "Прочие" : "Группа персонажей"}</h2>
+    <p class="hint">${c === 99 ? "Те, у кого мало общих событий с другими в выбранных главах."
+      : "Те, кто чаще всего появляется в одних событиях друг с другом в выбранных главах."}</p>
+    <ul>${members.map(id => `<li>${whoLink(id)}</li>`).join("")}</ul>`;
 }
 
 function drawTable() {
@@ -420,7 +553,7 @@ function applyFocus() {
   } else if (state.who) {
     const n = cy.getElementById(state.who);
     if (n.nonempty()) {
-      cy.elements().addClass("faded");
+      cy.elements().not(".cluster").addClass("faded");
       n.closedNeighborhood().removeClass("faded");
     }
   }
@@ -524,6 +657,11 @@ function focusEvent(id) {
 // Wiring.
 cy.on("tap", "node.ev", ev => showEvent(ev.target.id()));
 cy.on("tap", "node.person", ev => showCharacter(ev.target.id()));
+cy.on("tap", "node.cluster", ev => showCluster(ev.target.data("c")));
+// Group labels stay one size on screen, however far out the view is zoomed.
+cy.on("zoom", () => {
+  if (state.view === "cast") cy.nodes(".cluster").style("font-size", labelFont());
+});
 cy.on("tap", "node.chap", ev => showChapter(ev.target.data("ch")));
 const tip = $("#tip");
 cy.on("mouseover", "node.ev, node.person", ev => {
