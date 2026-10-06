@@ -1,0 +1,71 @@
+{
+ "shape": {
+  "singletons.characters": {
+   "n": 271,
+   "of": 556,
+   "value": 0.4874
+  },
+  "singletons.places": {
+   "n": 176,
+   "of": 303,
+   "value": 0.5809
+  },
+  "singletons.groups": {
+   "n": 150,
+   "of": 239,
+   "value": 0.6276
+  },
+  "places.unresolved": {
+   "n": 573,
+   "of": 2060,
+   "value": 0.2782
+  },
+  "importance.3": {
+   "n": 443,
+   "of": 2135,
+   "value": 0.2075
+  },
+  "storylines": {
+   "value": 25
+  },
+  "events.without_storyline": {
+   "n": 0,
+   "of": 2135,
+   "value": 0.0
+  },
+  "links.same_chunk": {
+   "n": 1389,
+   "of": 1826,
+   "value": 0.7607
+  },
+  "links.cross_chapter": {
+   "n": 412,
+   "of": 1826,
+   "value": 0.2256
+  },
+  "links.max_chapters": {
+   "value": 41
+  },
+  "links.over_20_chapters": {
+   "n": 27,
+   "of": 1826,
+   "value": 0.0148
+  },
+  "dialogue": {
+   "n": 15992,
+   "of": 33653,
+   "value": 0.4752
+  },
+  "dialogue.speech_verb_tag": {
+   "n": 1726,
+   "of": 15992,
+   "value": 0.1079
+  },
+  "chunk.paragraphs_median": {
+   "value": 127
+  },
+  "chunk.paragraphs_max": {
+   "value": 227
+  }
+ }
+}

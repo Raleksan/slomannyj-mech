@@ -11,6 +11,7 @@
   bookgraph render NAME                vault and graph.html into out/NAME/
   bookgraph site NAME [-o DIR]         static website from the vault, out/NAME/site/
   bookgraph fix NAME OLD=NEW ...       respell a name the model got wrong, in all work data
+  bookgraph eval NAME [--save]         measure the run, against gold/NAME/ if there
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
@@ -128,6 +129,12 @@ def cmd_fix(args) -> None:
     fix.run(args.book, pairs)
 
 
+def cmd_eval(args) -> None:
+    from . import evaluate
+
+    evaluate.run(args.book, args.save)
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -180,6 +187,10 @@ def main(argv=None) -> None:
     p.add_argument("book")
     p.add_argument("pairs", nargs="+", metavar="OLD=NEW", help="word stems, as Джон=Жон")
     p.set_defaults(func=cmd_fix)
+    p = sub.add_parser("eval")
+    p.add_argument("book")
+    p.add_argument("--save", action="store_true", help="keep this run as gold/NAME/baseline.json")
+    p.set_defaults(func=cmd_eval)
     p = sub.add_parser("progress")
     p.add_argument("book")
     p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",
