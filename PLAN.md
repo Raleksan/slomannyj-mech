@@ -5,6 +5,7 @@ Narrative Knowledge Graph» (October 2026) and the follow-up research of
 6 October 2026, compared against the run on «Сломанный Меч». The reports,
 sorted by theme, and the analysis of the follow-up are in
 [docs/report/](docs/report/README.md).
+The target pipeline as diagrams: [docs/pipeline.md](docs/pipeline.md).
 
 ## Ground rules
 
