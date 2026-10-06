@@ -10,6 +10,11 @@ BOOKGRAPH_GRAMMAR picks what llama-server enforces while it generates:
 prompt; "schema" the full schema as a grammar. On the A100 with Qwen3.8 the
 full grammar cost about 30% of generation speed at 8 parallel requests,
 and plain JSON mode costs nothing measurable.
+
+Every call names one of SETTINGS, the sampling for its kind of work (see
+PLAN.md, "Model settings"). BOOKGRAPH_MODEL names the served model to ask
+for; without it the server's only model answers, and Client.model() asks
+the server which one that is.
 """
 
 import asyncio
@@ -23,8 +28,19 @@ from pydantic import BaseModel, ValidationError
 
 BASE = os.environ.get("BOOKGRAPH_LLM", "http://127.0.0.1:8080").rstrip("/")
 GRAMMAR = os.environ.get("BOOKGRAPH_GRAMMAR", "json")
+MODEL = os.environ.get("BOOKGRAPH_MODEL", "")
 RETRIES = 3
+SEED = 20261006
 T = TypeVar("T", bound=BaseModel)
+
+# Thinking calls are never greedy: Qwen loops at low temperature.
+SETTINGS = {
+    "extract": {"temperature": 0.2, "top_p": 0.8, "top_k": 20, "think": False},
+    "merge": {"temperature": 0.15, "top_p": 0.8, "top_k": 20, "think": False},
+    "think": {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "think": True},
+    "compare": {"temperature": 0.3, "top_p": 0.8, "top_k": 20, "think": False},
+    "notes": {"temperature": 0.5, "top_p": 0.9, "top_k": 20, "think": False},
+}
 
 
 class Stats:
@@ -44,6 +60,14 @@ class Client:
         self.http = httpx.AsyncClient(base_url=BASE, timeout=timeout)
         self.limit = asyncio.Semaphore(concurrency)
         self.stats = Stats()
+        self._model = MODEL
+
+    async def model(self) -> str:
+        if not self._model:
+            r = await self.http.get("/v1/models")
+            r.raise_for_status()
+            self._model = r.json()["data"][0]["id"]
+        return self._model
 
     async def close(self) -> None:
         await self.http.aclose()
@@ -54,25 +78,10 @@ class Client:
         return len(r.json()["tokens"])
 
     async def ask(self, model: type[T], system: str, user: str, *,
-                  think: bool = False, max_tokens: int = 4096,
-                  temperature: float = 0.3) -> T:
-        schema = model.model_json_schema()
-        if GRAMMAR == "schema":
-            fmt = {"type": "json_schema", "json_schema": {"name": model.__name__, "schema": schema}}
-        else:
-            fmt = {"type": "json_object"}
-            system += ("\n\nJSON Schema ответа (соблюдай имена полей и типы точно):\n"
-                       + json.dumps(schema, ensure_ascii=False, separators=(",", ":")))
-        body = {
-            "messages": [{"role": "system", "content": system},
-                         {"role": "user", "content": user}],
-            "temperature": temperature,
-            "top_p": 0.9,
-            "max_tokens": max_tokens,
-            "response_format": fmt,
-            # Qwen's chat template reads this; other templates ignore it.
-            "chat_template_kwargs": {"enable_thinking": think},
-        }
+                  kind: str, max_tokens: int = 4096) -> T:
+        body = request(model, system, user, kind=kind, max_tokens=max_tokens)
+        if self._model:
+            body["model"] = self._model
         error = None
         for attempt in range(RETRIES):
             async with self.limit:
@@ -95,6 +104,31 @@ class Client:
                 if reason == "length":
                     body["max_tokens"] = int(body["max_tokens"] * 1.5)
         raise RuntimeError(f"no valid answer after {RETRIES} tries") from error
+
+
+def request(model: type[BaseModel], system: str, user: str, *,
+            kind: str, max_tokens: int) -> dict:
+    """The chat request body for one call of the given kind of work."""
+    opts = SETTINGS[kind]
+    schema = model.model_json_schema()
+    if GRAMMAR == "schema":
+        fmt = {"type": "json_schema", "json_schema": {"name": model.__name__, "schema": schema}}
+    else:
+        fmt = {"type": "json_object"}
+        system += ("\n\nJSON Schema ответа (соблюдай имена полей и типы точно):\n"
+                   + json.dumps(schema, ensure_ascii=False, separators=(",", ":")))
+    return {
+        "messages": [{"role": "system", "content": system},
+                     {"role": "user", "content": user}],
+        "temperature": opts["temperature"],
+        "top_p": opts["top_p"],
+        "top_k": opts["top_k"],
+        "seed": SEED,
+        "max_tokens": max_tokens,
+        "response_format": fmt,
+        # Qwen's chat template reads this; other templates ignore it.
+        "chat_template_kwargs": {"enable_thinking": opts["think"]},
+    }
 
 
 def dump(model: BaseModel) -> dict:

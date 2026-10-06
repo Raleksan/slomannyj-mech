@@ -163,7 +163,7 @@ async def run(book: str, concurrency: int) -> None:
     async def one(job) -> None:
         path, model, system, user = job
         t = time.monotonic()
-        note = await client.ask(model, system, user, max_tokens=4096)
+        note = await client.ask(model, system, user, kind="notes", max_tokens=4096)
         path.parent.mkdir(parents=True, exist_ok=True)
         write_json(path, dump(note))
         progress.tick(f"{path.parent.name}/{path.stem}", time.monotonic() - t,
@@ -183,7 +183,7 @@ async def run(book: str, concurrency: int) -> None:
         t = time.monotonic()
         overview = await client.ask(Overview, OVERVIEW,
                                     f"«{meta['title']}», {meta['author']}.\n\nГлавы:\n{lines}\n\n"
-                                    f"Сюжетные линии:\n{story}", think=True, max_tokens=20000)
+                                    f"Сюжетные линии:\n{story}", kind="think", max_tokens=20000)
         write_json(wd / "notes" / "overview.json", dump(overview))
         progress.tick("overview", time.monotonic() - t, "book overview", client.stats)
     finally:

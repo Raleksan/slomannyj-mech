@@ -70,7 +70,8 @@ async def run(book: str, chapters: str | None, concurrency: int) -> None:
         nonlocal done
         t = time.monotonic()
         try:
-            facts = await client.ask(ChunkFacts, SYSTEM, prompt(meta, c), max_tokens=6144)
+            facts = await client.ask(ChunkFacts, SYSTEM, prompt(meta, c),
+                                     kind="extract", max_tokens=6144)
         except Exception as e:
             progress.tick(c["id"], time.monotonic() - t, f"FAILED: {e}", client.stats, failed=True)
             raise

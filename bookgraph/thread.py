@@ -107,7 +107,7 @@ async def storylines(client: Client, events: list[dict], progress: Progress) -> 
     listing = "\n".join(f"{text[k]} — {n}" for k, n in top)
     t = time.monotonic()
     answer = await client.ask(Storylines, STORY_SYSTEM.format(n=STORYLINES), listing,
-                              think=True, max_tokens=24000, temperature=0.4)
+                              kind="think", max_tokens=24000)
     lines = [{"id": f"s{i:02d}", "name": s.name, "description": s.description}
              for i, s in enumerate(answer.storylines, 1)]
     progress.tick("storylines", time.monotonic() - t, f"{len(lines)} storylines", client.stats)
@@ -118,7 +118,8 @@ async def storylines(client: Client, events: list[dict], progress: Progress) -> 
         t = time.monotonic()
         listing = "\n".join(f"{i}. {text[k]}" for i, k in enumerate(part, 1))
         answer = await client.ask(TagMaps, MAP_SYSTEM,
-                                  f"Сюжетные линии:\n{numbered}\n\nМетки:\n{listing}", max_tokens=6000)
+                                  f"Сюжетные линии:\n{numbered}\n\nМетки:\n{listing}",
+                                  kind="extract", max_tokens=6000)
         out = {}
         for m in answer.tags:
             if 1 <= m.tag <= len(part) and 1 <= m.storyline <= len(lines):
@@ -154,7 +155,7 @@ async def links(client: Client, events: list[dict], progress: Progress) -> list[
         prior = "\n".join(line(e) for e in earlier) or "(начало книги)"
         answer = await client.ask(Links, LINK_SYSTEM,
                                   f"Важные события до этой главы:\n{prior}\n\nСобытия текущей главы:\n{current}",
-                                  max_tokens=6000)
+                                  kind="extract", max_tokens=6000)
         ok = [lk.model_dump() for lk in answer.links
               if lk.src in by_id and lk.dst in by_id and by_id[lk.dst]["chapter"] == ch
               and order[lk.src] < order[lk.dst]]

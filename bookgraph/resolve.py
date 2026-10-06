@@ -182,7 +182,8 @@ SYSTEM = """Ты редактор указателя имён к роману. �
 async def split(client: Client, kind: str, groups: dict[str, dict], keys: list[str]) -> list[tuple[str, list[str]]]:
     keys = sorted(keys, key=lambda k: -len(groups[k]["chunks"]))
     listing = "\n".join(describe(i, groups[k]) for i, k in enumerate(keys, 1))
-    answer = await client.ask(Clusters, SYSTEM.format(what=KINDS[kind]), listing, max_tokens=4096)
+    answer = await client.ask(Clusters, SYSTEM.format(what=KINDS[kind]), listing,
+                              kind="merge", max_tokens=4096)
     seen: set[int] = set()
     out = []
     for c in answer.clusters:
