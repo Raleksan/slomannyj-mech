@@ -24,7 +24,8 @@ class Measure(unittest.TestCase):
         m = ab.measure(rows, {"c1": facts("Жон Арк", "Руби")})
         self.assertEqual((m["chunks"], m["failed"], m["refused"], m["no events"]), (4, 2, 1, 1))
         self.assertEqual(m["same names as the run"], "50%")
-        self.assertEqual(m["generated tokens"], 150)
+        self.assertEqual(m["generated tokens"], 100)
+        self.assertEqual(m["tokens / s"], 10.0)
 
 
 if __name__ == "__main__":

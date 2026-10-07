@@ -60,7 +60,7 @@ async def run(book: str, concurrency: int) -> None:
         async def one(c: dict) -> None:
             nonlocal done
             t = time.monotonic()
-            before = client.stats.completion
+            before = 0  # see measure(): counted from the start of the run
             row = {"chunk": c["id"], "model": model}
             try:
                 facts = await client.ask(ChunkFacts, SYSTEM, prompt(meta, c), kind="extract", max_tokens=6144)
@@ -95,7 +95,11 @@ def measure(rows: list[dict], reference: dict[str, dict]) -> dict:
     events = [e for r in ok for e in r["facts"]["events"]]
     refused = [r for r in rows if REFUSAL.search(r.get("error", "") + r.get("facts", {}).get("summary", ""))]
     shared = [r for r in ok if r["chunk"] in reference]
-    secs = sum(r["seconds"] for r in rows)
+    # Every request starts with the run and waits for a server slot, so a
+    # row's seconds and tokens count from the start of the run: the largest
+    # is the run's total.
+    secs = max((r["seconds"] for r in rows), default=0)
+    tokens = max((r.get("tokens", 0) for r in rows), default=0)
     return {
         "chunks": len(rows),
         "failed": len(rows) - len(ok),
@@ -106,8 +110,9 @@ def measure(rows: list[dict], reference: dict[str, dict]) -> dict:
         "turning points": f"{sum(e['importance'] == 3 for e in events) / len(events):.0%}" if events else "—",
         "same names as the run": (f"{sum(jaccard(names(r['facts']), names(reference[r['chunk']])) for r in shared) / len(shared):.0%}"
                                   if shared else "—"),
-        "generated tokens": sum(r.get("tokens", 0) for r in rows),
-        "seconds per chunk": round(secs / len(rows)) if rows else 0,
+        "generated tokens": tokens,
+        "minutes": round(secs / 60),
+        "tokens / s": round(tokens / secs, 1) if secs else 0,
     }
 
 
