@@ -13,8 +13,12 @@ set -euo pipefail
 SECONDS=0
 CUDA=12-9
 CUDA_DIR=/usr/local/cuda-12.9
-REPO=https://huggingface.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF/resolve/main
-MODEL=/opt/models/Huihui-Qwen3.8-27B-abliterated-${QUANT}.gguf
+# A profile may name another GGUF; the model A/B test serves the original.
+GGUF_REPO="${GGUF_REPO:-huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF}"
+GGUF_FILE="${GGUF_FILE:-Huihui-Qwen3.8-27B-abliterated-${QUANT}.gguf}"
+ALIAS="${ALIAS:-qwen3.8-27b}"
+REPO=https://huggingface.co/${GGUF_REPO}/resolve/main
+MODEL=/opt/models/${GGUF_FILE}
 export DEBIAN_FRONTEND=noninteractive
 
 step() { echo "== $* (${SECONDS}s)"; }
@@ -59,11 +63,11 @@ step "llama-server unit"
 # Qwen's template; q8_0 KV cache halves its size at no visible cost.
 cat >/etc/systemd/system/llama-server.service <<EOF
 [Unit]
-Description=llama-server ${QUANT} for book-graph
+Description=llama-server ${GGUF_FILE} for book-graph
 After=network.target
 
 [Service]
-ExecStart=/opt/llama.cpp/build/bin/llama-server -m ${MODEL} --alias qwen3.8-27b \\
+ExecStart=/opt/llama.cpp/build/bin/llama-server -m ${MODEL} --alias ${ALIAS} \\
   --host 127.0.0.1 --port 8080 -ngl 999 --flash-attn on \\
   -c ${CTX} --parallel ${SLOTS} --cache-type-k q8_0 --cache-type-v q8_0 \\
   --jinja --metrics --slots -b 2048 -ub 512
