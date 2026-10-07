@@ -7,15 +7,26 @@ measuring, so the rules don't bend to fit a result. Background:
 
 ## Setup
 
-Label Studio runs on a remote host, never on the laptop:
+Label Studio runs from a pinned image (amd64 and arm64), here with Docker
+or Podman:
 
 ```bash
-scripts/annotate.sh ubuntu@HOST up       # once: start it (pinned Docker image)
+scripts/annotate.sh local up     # open http://127.0.0.1:8090
+scripts/annotate.sh local down   # when done for the day; the data stays
+```
+
+The data (SQLite and uploads) is `annotate/data/`, not tracked: back it up
+with the rest of your files. Or on a remote host, through ssh:
+
+```bash
+scripts/annotate.sh ubuntu@HOST up       # once: start it
 scripts/annotate.sh ubuntu@HOST tunnel   # each session; open http://127.0.0.1:8090
 scripts/annotate.sh ubuntu@HOST backup   # after each session: copy to annotate/data/
 ```
 
-Sign up on the first visit; the page is reachable only through the tunnel.
+A backup lands where the local one reads, so moving from a host to here is
+`backup`, `down`, then `local up`. Either way it listens on 127.0.0.1 only.
+Sign up on the first visit.
 Make one project per task: *Create Project* → name it after the task →
 *Labeling Setup* → *Custom template* → *Code*, paste
 `annotate/configs/TASK.xml` → *Data Import*, upload

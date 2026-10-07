@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Label Studio for the gold set, on a remote host, reached through ssh.
+# Label Studio for the gold set, here or on a remote host reached through ssh.
+#   scripts/annotate.sh local up|down              here, with Docker or Podman;
+#                                                  the data is annotate/data/
 #   scripts/annotate.sh [-p PORT] USER@HOST up      start it (Docker, pinned image)
 #   scripts/annotate.sh [-p PORT] USER@HOST tunnel  forward http://127.0.0.1:8090
 #   scripts/annotate.sh [-p PORT] USER@HOST backup  copy its data to annotate/data/
 #   scripts/annotate.sh [-p PORT] USER@HOST down    stop it; the data stays
 # It listens on the host's 127.0.0.1 only, so nothing is exposed; sign up on
 # the first visit through the tunnel. The data (SQLite and uploads) lives in
-# ~/label-studio on the host: back it up before giving the host back.
+# ~/label-studio on the host: back it up before giving the host back. A
+# backup lands in annotate/data/, where the local one reads it, so moving from
+# a host to here is backup, down, then local up.
 set -euo pipefail
 
 IMAGE=heartexlabs/label-studio:1.23.2@sha256:afcc516a22775a39d0d66f4c2ddc95d01be3e3d3862b21fcf4f9de34b4ad4e12
@@ -25,6 +29,42 @@ if [[ $# -ne 2 ]]; then
   exit 2
 fi
 host="$1"
+
+if [[ "$host" == local ]]; then
+  data="${root}/annotate/data"
+  if command -v docker >/dev/null; then
+    engine=docker
+    # The image runs as uid 1001; run it as you instead, so the files stay yours.
+    owner=(--user "$(id -u):$(id -g)")
+  elif command -v podman >/dev/null; then
+    engine=podman
+    # Rootless: your files appear as uid 1001, the image's user, inside.
+    owner=(--userns "keep-id:uid=1001,gid=1001")
+  else
+    echo "needs docker or podman" >&2
+    exit 1
+  fi
+  case "$2" in
+    up)
+      mkdir -p "$data"
+      "$engine" rm -f label-studio >/dev/null 2>&1 || true
+      "$engine" run -d --name label-studio "${owner[@]}" \
+        -p "127.0.0.1:${LOCAL_PORT}:8080" -v "${data}:/label-studio/data:z" \
+        "docker.io/${IMAGE}" >/dev/null
+      for _ in $(seq 60); do
+        curl -fs "http://127.0.0.1:${LOCAL_PORT}/health" >/dev/null && break
+        sleep 3
+      done
+      curl -fsS "http://127.0.0.1:${LOCAL_PORT}/health" && echo
+      echo "open http://127.0.0.1:${LOCAL_PORT}; stop with: $0 local down"
+      ;;
+    down)
+      "$engine" stop label-studio >/dev/null && "$engine" rm label-studio >/dev/null && echo stopped
+      ;;
+    *) echo "local takes up or down" >&2; exit 2 ;;
+  esac
+  exit 0
+fi
 
 case "$2" in
   up)
