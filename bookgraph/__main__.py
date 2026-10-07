@@ -15,6 +15,7 @@
   bookgraph gold pack NAME             Label Studio tasks for the gold set, gold/NAME/packets/
   bookgraph gold import NAME FILE [--repeat]
                                        a Label Studio export into gold/NAME/answers/
+  bookgraph ab NAME [-j 3] [--report]  the gold sample through the served model; compare models
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
@@ -149,6 +150,15 @@ def cmd_gold(args) -> None:
         gold.import_export(args.book, Path(args.file), args.repeat)
 
 
+def cmd_ab(args) -> None:
+    from . import ab
+
+    if args.report:
+        ab.report(args.book)
+    else:
+        asyncio.run(ab.run(args.book, args.jobs))
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -211,6 +221,11 @@ def main(argv=None) -> None:
     p.add_argument("file", nargs="?", help="Label Studio JSON export, for import")
     p.add_argument("--repeat", action="store_true", help="the export is the second pass, for agreement")
     p.set_defaults(func=cmd_gold)
+    p = sub.add_parser("ab")
+    p.add_argument("book")
+    p.add_argument("-j", "--jobs", type=int, default=3)
+    p.add_argument("--report", action="store_true", help="compare the models already run")
+    p.set_defaults(func=cmd_ab)
     p = sub.add_parser("progress")
     p.add_argument("book")
     p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",

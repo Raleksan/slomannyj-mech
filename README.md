@@ -32,6 +32,25 @@ event). The legend and the importance buttons change it on the page.
 `progress NAME [-w 10]` shows the running stage: done/total, ETA, tokens,
 GPU load and busy server slots, the most present characters so far.
 
+## Measuring a run
+
+`eval NAME` measures a run: singleton entities, event places that don't
+resolve, the share of turning points, how far links reach. With hand-checked
+answers in `gold/NAME/answers/`, it also scores the run against them
+(alias precision and recall, coreference, places, links, importance,
+events), each with a 95% interval. Every number is printed against
+`gold/NAME/baseline.json`, which `eval NAME --save` writes.
+
+The gold set comes from `gold pack NAME`, which makes Label Studio tasks
+from the run, and `gold import NAME EXPORT.json`; how to annotate, and how
+to run Label Studio on a remote host with `scripts/annotate.sh`, is in
+[docs/gold.md](docs/gold.md).
+
+`scripts/ab.sh USER@HOST NAME` puts 40 chunks of the gold sample through
+the original Qwen3.8-27B and the abliterated one on an A6000 and compares
+them: failures, refusals, empty answers, how much they find, speed.
+`ab NAME --report` prints the comparison again.
+
 ## A website
 
 `site` turns the same notes into plain HTML: a page per note with the

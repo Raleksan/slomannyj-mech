@@ -83,6 +83,7 @@ class Client:
         if self._model:
             body["model"] = self._model
         error = None
+        last = ""
         for attempt in range(RETRIES):
             async with self.limit:
                 r = await self.http.post("/v1/chat/completions", json=body)
@@ -93,7 +94,7 @@ class Client:
             self.stats.prompt += usage.get("prompt_tokens", 0)
             self.stats.completion += usage.get("completion_tokens", 0)
             choice = data["choices"][0]
-            content = choice["message"].get("content") or ""
+            content = last = choice["message"].get("content") or ""
             try:
                 return model.model_validate_json(content)
             except ValidationError as e:
@@ -103,7 +104,8 @@ class Client:
                       f"{str(e).splitlines()[0]}")
                 if reason == "length":
                     body["max_tokens"] = int(body["max_tokens"] * 1.5)
-        raise RuntimeError(f"no valid answer after {RETRIES} tries") from error
+        # The last answer shows whether the model refused or just broke the JSON.
+        raise RuntimeError(f"no valid answer after {RETRIES} tries; last: {last[:400]!r}") from error
 
 
 def request(model: type[BaseModel], system: str, user: str, *,
