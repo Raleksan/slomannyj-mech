@@ -346,6 +346,20 @@ main characters, and character singletons drop well below 49%.
 Each milestone is a few commits, and `eval` runs after each. Start with
 the model settings and the gold-set format, then place matching.
 
+## Status
+
+**M0, 7 October 2026: tooling done, the gold set in progress.**
+
+- Done: model settings per kind of call; `eval` with the shape measures
+  and the first run as `gold/slomannyj_mech/baseline.json`; the gold-set
+  packets, labeling configs and guide ([docs/gold.md](docs/gold.md));
+  `gold import` and the gold measures; Label Studio, locally or on a host
+  (`scripts/annotate.sh`); the model A/B test (under "Measured").
+- Left: the annotation. Alias, place, link, compare and top before M1
+  (about six evenings); event and quote before M2; each task's repeat pass
+  two weeks after it. Then `eval`, whose numbers M1 has to beat, and the
+  A/B answers scored against the gold events.
+
 ## Open measurements
 
 - CPU speed of the embedding candidates on Asahi.
