@@ -39,12 +39,20 @@ It uses Docker or Podman, whichever is installed, and listens on
 account you made; the project `label` there is the alias task, 4 of 197
 done, and it carries on where you left it.
 
-**A project per task.** *Create Project* → name it after the task
-(`alias`, `place`, …) → *Labeling Setup* → *Custom template* → *Code*: paste
-the whole of `annotate/configs/TASK.xml` → *Save* → *Data Import*: upload
-`gold/slomannyj_mech/packets/TASK.json`. Don't import the `-repeat.json`
-files yet. The project's name doesn't matter to the import: every task
-carries its own id (`alias-0042`).
+**A project per task.** They are already there: `label` (the alias task,
+made by hand), `place`, `link`, `compare`, `top`, `event` and `quote`. To
+make one again, or on a fresh install (after signing up):
+
+```bash
+scripts/annotate.sh local projects alias place link compare top event quote
+```
+
+It loads `annotate/configs/TASK.xml` and `gold/slomannyj_mech/packets/TASK.json`
+into a project named after the task, through Label Studio's own import, and
+leaves a project whose name exists alone. By hand instead: *Create Project*
+→ *Labeling Setup* → *Custom template* → *Code*: paste the config →
+*Data Import*: upload the packet. The project's name doesn't matter to the
+import: every task carries its own id (`alias-0042`).
 
 ## A session
 
@@ -297,10 +305,15 @@ ones stage 1b has to solve.
 
 ## The repeat pass
 
-Two weeks after finishing a task, make a project `TASK-repeat` from
-`packets/TASK-repeat.json`: 15% of the tasks, with the same ids, in a
-different project. Answer them without looking at the first project or at
-your notes, then import with `--repeat`:
+Two weeks after finishing a task, make its repeat project: 15% of the
+tasks, with the same ids, in a project of their own.
+
+```bash
+scripts/annotate.sh local projects alias-repeat
+```
+
+Answer them without looking at the first project or at your notes, then
+import with `--repeat`:
 
 ```bash
 .venv/bin/python -m bookgraph gold import slomannyj_mech ~/Downloads/....json --repeat
