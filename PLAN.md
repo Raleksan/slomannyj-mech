@@ -80,7 +80,8 @@ Without it, every later change gets judged by eye.
   - bootstrap confidence intervals on every number.
 - **Model A/B test:** run the gold set through the original Qwen3.8-27B
   and the abliterated one. Keep the abliterated model only if it isn't
-  worse, or if the original refuses parts of the book.
+  worse, or if the original refuses parts of the book. First results
+  under "Measured" below: the original refused nothing.
 - Every later step has to beat the baseline above.
 
 ## Stage 1: `parse`, stable addresses (M2)
@@ -349,7 +350,34 @@ the model settings and the gold-set format, then place matching.
 
 - CPU speed of the embedding candidates on Asahi.
 - Whether vLLM's schema mode slows extraction.
-- Whether the original Qwen3.8-27B refuses parts of the book.
+
+## Measured
+
+**Model A/B test, 7 October 2026.** `scripts/ab.sh` on an RTX A6000: the
+40 chunks of the gold sample (the event packets' chunks, topped up over
+the book) through both models at Q8_0 on llama.cpp, the same sampling and
+3 requests at once. The answers are in `work/slomannyj_mech/ab/`.
+
+| measure | abliterated | original |
+|---|---|---|
+| failed / refused / no events | 0 / 0 / 0 | 0 / 0 / 0 |
+| events per chunk | 8.7 | 9.3 |
+| characters per chunk | 10.2 | 9.9 |
+| turning points | 20% | 23% |
+| events about killing, death or blood | 57 (16%) | 74 (20%) |
+| same character names as the first run | 80% | 76% |
+| speed | 45.8 tok/s, 45 min | 43.8 tok/s, 52 min |
+
+The two models name the same characters in 82% of cases.
+
+- **The original refuses nothing**, and doesn't soften violence: on the
+  most violent chunk (ch053-02, the Arc family's murders) it gave 8
+  violent events to the abliterated model's 3, with the same detail.
+- **Which is more accurate is still open**: more events is not more
+  correct events. Score both saved answers against the gold events once
+  they're annotated; that needs no GPU.
+- **Leaning to the original** for M2's extraction run, decided by those
+  gold scores. One run of 40 chunks each: suggestive, not settled.
 
 ## Deferred
 
