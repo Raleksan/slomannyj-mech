@@ -30,8 +30,8 @@ case "$2" in
   up)
     # The image runs as uid 1001.
     ssh -p "$port" "$host" "mkdir -p ~/label-studio && sudo chown 1001 ~/label-studio \
-      && { docker rm -f label-studio >/dev/null 2>&1 || true; } \
-      && docker run -d --name label-studio --restart unless-stopped \
+      && { sudo docker rm -f label-studio >/dev/null 2>&1 || true; } \
+      && sudo docker run -d --name label-studio --restart unless-stopped \
         -p 127.0.0.1:${LOCAL_PORT}:8080 -v ~/label-studio:/label-studio/data \
         ${IMAGE} >/dev/null \
       && for i in \$(seq 60); do curl -fs http://127.0.0.1:${LOCAL_PORT}/health >/dev/null && break; sleep 3; done \
@@ -48,7 +48,7 @@ case "$2" in
     echo "copied to annotate/data/"
     ;;
   down)
-    ssh -p "$port" "$host" "docker stop label-studio >/dev/null && echo stopped"
+    ssh -p "$port" "$host" "sudo docker stop label-studio >/dev/null && echo stopped"
     ;;
   *) echo "up, tunnel, backup or down" >&2; exit 2 ;;
 esac
