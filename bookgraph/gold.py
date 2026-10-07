@@ -398,7 +398,7 @@ def pack(book: str) -> None:
 # The task fields kept with an answer; the rest (html) is display only.
 KEEP = {"alias": ("kind", "a", "b", "stratum"), "place": ("event", "where_text", "run"),
         "link": ("src", "dst", "run", "stratum", "chapters_apart"), "compare": ("a", "b"),
-        "top": (), "event": ("event", "chunk"), "quote": ("para", "stratum")}
+        "top": ("items",), "event": ("event", "chunk"), "quote": ("para", "stratum")}
 
 
 def answer(result: list[dict]) -> dict:
