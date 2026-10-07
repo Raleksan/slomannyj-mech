@@ -36,11 +36,9 @@ scripts/annotate.sh local up     # starts Label Studio; open http://127.0.0.1:80
 
 It uses Docker or Podman, whichever is installed, and listens on
 127.0.0.1 only. Its data is `annotate/data/` (not in git). Sign in with the
-account you made; the project `label` there is the alias task, 4 of 197
-done, and it carries on where you left it.
+account you made; the project `alias` carries on where you left it.
 
-**A project per task.** They are already there: `label` (the alias task,
-made by hand), `place`, `link`, `compare`, `top`, `event` and `quote`. To
+**A project per task.** They are already there: `alias`, `place`, `link`, `compare`, `top`, `event` and `quote`. To
 make one again, or on a fresh install (after signing up):
 
 ```bash
