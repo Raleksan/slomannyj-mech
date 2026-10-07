@@ -325,4 +325,8 @@ the disagreements, write the ruling down below, and fix the first answers.
 Borderline cases you settled, so you settle them the same way next time.
 One line each: the case, the answer, why.
 
--
+- **One full name, several people** (alias-0005: «Жанна Арк» is Жон's
+  mother in ch. 1 and the family's founder in ch. 36 and 53): *sometimes*,
+  and say who is who in the note, with chapters. The gold set compares
+  names, not mentions, so only the note records that the full name itself
+  is shared; M2's paragraph ids will tell the mentions apart.
