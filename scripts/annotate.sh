@@ -39,7 +39,8 @@ if [[ "$host" == local ]]; then
   elif command -v podman >/dev/null; then
     engine=podman
     # Rootless: your files appear as uid 1001, the image's user, inside.
-    owner=(--userns "keep-id:uid=1001,gid=1001")
+    # and the shell's proxy settings stay out: it needs no network.
+    owner=(--userns "keep-id:uid=1001,gid=1001" --http-proxy=false)
   else
     echo "needs docker or podman" >&2
     exit 1
