@@ -1,0 +1,13 @@
+<!-- Which place is the event's «where»? docs/gold.md, "Event places". -->
+<View>
+  <Header value="Где: «$where_text»"/>
+  <HyperText name="card" value="$card"/>
+  <HyperText name="context" value="$context"/>
+  <Choices name="place" toName="card" value="$options" choice="single-radio" required="true"/>
+  <Choices name="relation" toName="card" choice="single-radio" showInline="true">
+    <Choice value="exactly" hint="«where» is that place"/>
+    <Choice value="inside" hint="«where» is a part of that place: a room, a street"/>
+    <Choice value="unclear"/>
+  </Choices>
+  <TextArea name="missed" toName="card" placeholder="the right place, if it is not in the list" rows="1" maxSubmissions="1"/>
+</View>

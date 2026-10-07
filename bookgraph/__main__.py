@@ -12,6 +12,9 @@
   bookgraph site NAME [-o DIR]         static website from the vault, out/NAME/site/
   bookgraph fix NAME OLD=NEW ...       respell a name the model got wrong, in all work data
   bookgraph eval NAME [--save]         measure the run, against gold/NAME/ if there
+  bookgraph gold pack NAME             Label Studio tasks for the gold set, gold/NAME/packets/
+  bookgraph gold import NAME FILE [--repeat]
+                                       a Label Studio export into gold/NAME/answers/
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
 """
@@ -135,6 +138,17 @@ def cmd_eval(args) -> None:
     evaluate.run(args.book, args.save)
 
 
+def cmd_gold(args) -> None:
+    from . import gold
+
+    if args.action == "pack":
+        gold.pack(args.book)
+    else:
+        if not args.file:
+            sys.exit("gold import: which export file?")
+        gold.import_export(args.book, Path(args.file), args.repeat)
+
+
 def cmd_stats(args) -> None:
     wd = work_dir(args.book)
     data = read_json(wd / "chapters.json")
@@ -191,6 +205,12 @@ def main(argv=None) -> None:
     p.add_argument("book")
     p.add_argument("--save", action="store_true", help="keep this run as gold/NAME/baseline.json")
     p.set_defaults(func=cmd_eval)
+    p = sub.add_parser("gold")
+    p.add_argument("action", choices=("pack", "import"))
+    p.add_argument("book")
+    p.add_argument("file", nargs="?", help="Label Studio JSON export, for import")
+    p.add_argument("--repeat", action="store_true", help="the export is the second pass, for agreement")
+    p.set_defaults(func=cmd_gold)
     p = sub.add_parser("progress")
     p.add_argument("book")
     p.add_argument("-w", "--watch", type=int, default=0, metavar="SECONDS",

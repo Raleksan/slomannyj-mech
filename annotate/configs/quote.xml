@@ -1,0 +1,14 @@
+<!-- Who says the highlighted line? docs/gold.md, "Quotes". -->
+<View>
+  <HyperText name="context" value="$context"/>
+  <Choices name="speaker" toName="context" value="$options" choice="single-radio" required="true"/>
+  <Choices name="cue" toName="context" choice="single-radio" showInline="true">
+    <Choice value="explicit tag"/>
+    <Choice value="pronoun and verb"/>
+    <Choice value="turn-taking"/>
+    <Choice value="addressee named"/>
+    <Choice value="gender of a verb"/>
+    <Choice value="only from the scene"/>
+  </Choices>
+  <TextArea name="other" toName="context" placeholder="the speaker, if not in the list" rows="1" maxSubmissions="1"/>
+</View>

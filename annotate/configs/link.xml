@@ -1,0 +1,22 @@
+<!-- Is there a story link from A (earlier) to B? docs/gold.md, "Links". -->
+<View>
+  <Header value="A → B, $chapters_apart chapters apart"/>
+  <View style="display:flex;gap:16px">
+    <View style="flex:1"><Header value="A (раньше)" size="5"/><HyperText name="a" value="$a_html"/></View>
+    <View style="flex:1"><Header value="B (позже)" size="5"/><HyperText name="b" value="$b_html"/></View>
+  </View>
+  <Choices name="link" toName="a" choice="single-radio" required="true">
+    <Choice value="причина"/>
+    <Choice value="условие"/>
+    <Choice value="мотив"/>
+    <Choice value="продолжение"/>
+    <Choice value="развязка"/>
+    <Choice value="предвестие"/>
+    <Choice value="вопрос → ответ"/>
+    <Choice value="параллель"/>
+    <Choice value="none"/>
+    <Choice value="uncertain"/>
+    <Choice value="not enough context"/>
+  </Choices>
+  <TextArea name="mechanism" toName="a" placeholder="how exactly A leads to B" rows="2" maxSubmissions="1"/>
+</View>

@@ -1,0 +1,30 @@
+<!-- Is the extracted event real, and where is it in the text? docs/gold.md, "Events". -->
+<View>
+  <HyperText name="card" value="$card"/>
+  <HyperText name="context" value="$context"/>
+  <Choices name="verdict" toName="card" choice="single-radio" required="true" showInline="true">
+    <Choice value="correct"/>
+    <Choice value="details wrong"/>
+    <Choice value="not an event"/>
+    <Choice value="not in this text"/>
+  </Choices>
+  <TextArea name="evidence" toName="card" placeholder="paragraph ids, as ch007.p0142 ch007.p0143" rows="1" maxSubmissions="1"/>
+  <Choices name="mode" toName="card" choice="single-radio" showInline="true">
+    <Choice value="now"/>
+    <Choice value="flashback"/>
+    <Choice value="memory"/>
+    <Choice value="dream"/>
+    <Choice value="prophecy"/>
+    <Choice value="letter"/>
+  </Choices>
+  <Choices name="features" toName="card" choice="multiple" showInline="true">
+    <Choice value="state change"/>
+    <Choice value="decision"/>
+    <Choice value="revelation"/>
+    <Choice value="death or injury"/>
+    <Choice value="irreversible"/>
+    <Choice value="object changes hands"/>
+    <Choice value="relationship change"/>
+  </Choices>
+  <TextArea name="missed" toName="card" placeholder="events in the highlighted part the run missed, one per line" rows="2" maxSubmissions="1"/>
+</View>

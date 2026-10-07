@@ -1,0 +1,8 @@
+<!-- The 30 events that matter most, in order. docs/gold.md, "Importance". -->
+<View>
+  <List name="events" value="$items" title="Candidates, in book order"/>
+  <Ranker name="rank" toName="events">
+    <Bucket name="top" title="Top 30, most important first"/>
+  </Ranker>
+  <TextArea name="missed" toName="events" placeholder="events missing from the candidates, one per line, with chapter" rows="3" maxSubmissions="1"/>
+</View>

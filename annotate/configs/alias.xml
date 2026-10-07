@@ -1,0 +1,16 @@
+<!-- Do these two names refer to the same one? docs/gold.md, "Aliases". -->
+<View>
+  <Header value="$kind: «$a» и «$b» ($stratum)"/>
+  <View style="display:flex;gap:16px">
+    <View style="flex:1"><HyperText name="a" value="$a_html"/></View>
+    <View style="flex:1"><HyperText name="b" value="$b_html"/></View>
+  </View>
+  <Choices name="verdict" toName="a" choice="single-radio" required="true" showInline="true">
+    <Choice value="same" hotkey="1"/>
+    <Choice value="different" hotkey="2"/>
+    <Choice value="sometimes" hotkey="3" hint="one name, several referents in the book"/>
+    <Choice value="uncertain" hotkey="4"/>
+    <Choice value="not enough context" hotkey="5"/>
+  </Choices>
+  <TextArea name="note" toName="a" placeholder="why, or a missed name of the same one" rows="1" maxSubmissions="1"/>
+</View>

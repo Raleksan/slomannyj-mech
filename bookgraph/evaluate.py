@@ -80,16 +80,19 @@ def table(now: dict, before: dict | None) -> str:
     rows = []
     for name, m in now.items():
         v = value(m)
-        text = "—" if v is None else (f"{v:.1%}" if "n" in m else f"{v:g}")
-        if "n" in m:
+        part = "of" in m or "low" in m
+        text = "—" if v is None else (f"{v:.1%}" if part else f"{v:g}")
+        if "of" in m:
             text += f" ({m['n']}/{m['of']})"
         if "low" in m:
-            text += f"  [{m['low']:.1%}–{m['high']:.1%}]"
+            text += f"  [{m['low']:.1%}–{m['high']:.1%}], n={m['n']}"
+        if "kappa" in m:
+            text += f", κ={m['kappa']:g}, n={m['n']}"
         if before and name in before and value(before[name]) is not None and v is not None:
             old = value(before[name])
             diff = v - old
             if diff:
-                text += f"  {'+' if diff > 0 else ''}{diff:.1%}" if "n" in m else f"  ({old:g} before)"
+                text += f"  {'+' if diff > 0 else ''}{diff:.1%}" if part else f"  ({old:g} before)"
         rows.append((name, text))
     width = max((len(n) for n, _ in rows), default=0)
     return "\n".join(f"{n:<{width}}  {t}" for n, t in rows)
