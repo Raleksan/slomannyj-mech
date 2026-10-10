@@ -5,6 +5,11 @@
   bookgraph gold import NAME FILE [--repeat]
                                a Label Studio JSON export into
                                gold/NAME/answers/<task>.jsonl
+  bookgraph gold import NAME --db annotate/data/label_studio.sqlite3
+                               every project of a Label Studio database
+  bookgraph gold silver NAME [-t TASKS] [-j N]
+                               the tasks answered by the served model, a
+                               bigger one than the run's: gold/NAME/silver/
   bookgraph gold glossary NAME the author's glossary entries for each name of
                                the alias packets, written into them in place
 
@@ -478,7 +483,30 @@ def task_of(gid: str) -> str:
 
 
 def import_export(book: str, path: Path, repeat: bool = False) -> None:
-    export = json.loads(path.read_text(encoding="utf-8"))
+    import_tasks(book, json.loads(path.read_text(encoding="utf-8")), repeat)
+
+
+def import_db(book: str, path: Path) -> None:
+    """Every project of a Label Studio database, as if each were exported:
+    no export to click through. Projects named *-repeat are the repeat pass.
+    The database is opened read-only."""
+    import sqlite3
+
+    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    projects = db.execute("select id, title from project").fetchall()
+    for pid, title in projects:
+        tasks = []
+        for tid, data in db.execute("select id, data from task where project_id = ?", (pid,)):
+            notes = db.execute("select result, was_cancelled, created_at, updated_at from task_completion "
+                               "where task_id = ?", (tid,)).fetchall()
+            tasks.append({"data": json.loads(data),
+                          "annotations": [{"result": json.loads(r or "[]"), "was_cancelled": bool(c),
+                                           "created_at": ca, "updated_at": ua} for r, c, ca, ua in notes]})
+        if any(t["annotations"] for t in tasks):
+            import_tasks(book, tasks, title.endswith("-repeat"))
+
+
+def import_tasks(book: str, export: list[dict], repeat: bool = False) -> None:
     out = gold_dir(book) / "answers" / ("repeat" if repeat else "")
     out.mkdir(parents=True, exist_ok=True)
     rows: dict[str, dict[str, dict]] = defaultdict(dict)
@@ -510,7 +538,7 @@ def load(book: str, task: str, repeat: bool = False) -> list[dict]:
     return [json.loads(line) for line in file.read_text(encoding="utf-8").splitlines() if line]
 
 
-def score(book: str) -> dict:
+def score(book: str, silver: bool = False) -> dict:
     from . import scores
 
-    return scores.score(book)
+    return scores.score(book, silver)

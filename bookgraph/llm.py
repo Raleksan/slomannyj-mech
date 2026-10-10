@@ -40,6 +40,8 @@ SETTINGS = {
     "think": {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "think": True},
     "compare": {"temperature": 0.3, "top_p": 0.8, "top_k": 20, "think": False},
     "notes": {"temperature": 0.5, "top_p": 0.9, "top_k": 20, "think": False},
+    # The silver-set judge (gold silver): a bigger model, thinking.
+    "judge": {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "think": True},
 }
 
 
@@ -95,6 +97,9 @@ class Client:
             self.stats.completion += usage.get("completion_tokens", 0)
             choice = data["choices"][0]
             content = last = choice["message"].get("content") or ""
+            # Without a reasoning parser on the server, the thinking comes
+            # back inside the content.
+            content = content.rsplit("</think>", 1)[-1].strip()
             try:
                 return model.model_validate_json(content)
             except ValidationError as e:
@@ -128,8 +133,10 @@ def request(model: type[BaseModel], system: str, user: str, *,
         "seed": SEED,
         "max_tokens": max_tokens,
         "response_format": fmt,
-        # Qwen's chat template reads this; other templates ignore it.
-        "chat_template_kwargs": {"enable_thinking": opts["think"]},
+        # Qwen's and GLM's chat templates read enable_thinking, DeepSeek-V4's
+        # thinking and reasoning_effort; each ignores the others' keys.
+        "chat_template_kwargs": {"enable_thinking": opts["think"], "thinking": opts["think"],
+                                 **({"reasoning_effort": "high"} if opts["think"] else {})},
     }
 
 

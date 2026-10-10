@@ -9,11 +9,15 @@
 # llama-server, which holds the same port and GPU memory, and starts vLLM;
 # `systemctl start llama-server` after `systemctl stop vllm-server` goes back.
 # Needs about 56 GB of GPU memory for the weights, so A100 80 GB only.
+# A profile may serve another model (the silver-set judge, judge-*.env):
+# HF_REPO, SERVED (the name to ask for) and VLLM_ARGS replace the defaults.
 set -euo pipefail
 
 SECONDS=0
-HF=huihui-ai/Huihui-Qwen3.8-27B-abliterated
-DIR=/opt/models/hf/Huihui-Qwen3.8-27B-abliterated
+HF=${HF_REPO:-huihui-ai/Huihui-Qwen3.8-27B-abliterated}
+DIR=/opt/models/hf/${HF##*/}
+SERVED=${SERVED:-qwen3.8-27b}
+VLLM_ARGS=${VLLM_ARGS:-"--dtype bfloat16 --max-model-len 32768 --max-num-seqs 32 --gpu-memory-utilization 0.92 --limit-mm-per-prompt '{\"image\":0,\"video\":0}' --reasoning-parser qwen3"}
 step() { echo "== $* (${SECONDS}s)"; }
 
 export DEBIAN_FRONTEND=noninteractive
@@ -31,7 +35,7 @@ if [[ ! -x /opt/vllm/bin/vllm ]]; then
 fi
 /opt/vllm/bin/python -c "import vllm, torch; print('vllm', vllm.__version__, 'torch', torch.__version__)"
 
-step "model ${HF} (bf16)"
+step "model ${HF}"
 mkdir -p "$DIR"
 curl -fsSL "https://huggingface.co/api/models/${HF}" \
   | python3 -c "
@@ -52,7 +56,7 @@ step "vllm-server unit"
 # Vision inputs off: the text model alone, without the vision encoder's memory.
 cat >/etc/systemd/system/vllm-server.service <<EOF
 [Unit]
-Description=vLLM bf16 for book-graph
+Description=vLLM ${SERVED} for book-graph
 After=network.target
 Conflicts=llama-server.service
 
@@ -61,10 +65,8 @@ Environment=HF_HUB_OFFLINE=1
 # FlashInfer's sampler compiles itself on first use (needs ninja and a CUDA
 # toolkit matching torch's); vLLM's own sampler needs neither.
 Environment=VLLM_USE_FLASHINFER_SAMPLER=0
-ExecStart=/opt/vllm/bin/vllm serve ${DIR} --served-model-name qwen3.8-27b \\
-  --host 127.0.0.1 --port 8080 --dtype bfloat16 --max-model-len 32768 \\
-  --max-num-seqs 32 --gpu-memory-utilization 0.92 \\
-  --limit-mm-per-prompt '{"image":0,"video":0}' --reasoning-parser qwen3
+ExecStart=/opt/vllm/bin/vllm serve ${DIR} --served-model-name ${SERVED} \\
+  --host 127.0.0.1 --port 8080 ${VLLM_ARGS}
 Restart=on-failure
 RestartSec=10
 
@@ -78,7 +80,8 @@ if [[ "${START:-1}" == 1 ]]; then
   systemctl enable -q vllm-server
   systemctl restart vllm-server
   step "waiting for vLLM"
-  for _ in $(seq 180); do
+  # A big model loads for a long time: up to an hour.
+  for _ in $(seq 720); do
     curl -fs http://127.0.0.1:8080/health >/dev/null && break
     if ! systemctl is-active -q vllm-server; then
       journalctl -u vllm-server -n 60 --no-pager

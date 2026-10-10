@@ -105,10 +105,14 @@ def run(book: str, save: bool = False) -> None:
         from . import gold
 
         result["gold"] = gold.score(book)
+    if (gd / "silver").exists():
+        from . import gold
+
+        result["silver"] = gold.score(book, silver=True)
     write_json(work_dir(book) / "eval.json", result)
     base_path = gd / "baseline.json"
     base = read_json(base_path) if base_path.exists() else {}
-    for part in ("shape", "gold"):
+    for part in ("shape", "gold", "silver"):
         if result.get(part):
             print(f"## {part}" + (" (against baseline)" if base.get(part) else ""))
             print(table(result[part], base.get(part)))

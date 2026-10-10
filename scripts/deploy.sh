@@ -3,6 +3,7 @@
 #   scripts/deploy.sh [-p PORT] [-b llama|vllm] USER@HOST PROFILE
 #   scripts/deploy.sh Ubuntu@HOST a6000
 #   scripts/deploy.sh -b vllm Ubuntu@HOST a100
+#   scripts/deploy.sh -b vllm Ubuntu@HOST judge-glm   (the silver-set judge)
 # With the llama backend (the default) runs host/install.sh as root with
 # host/profiles/PROFILE.env; with vllm, host/vllm.sh instead (A100 80 GB
 # only; run the pipeline with -j 24). Then it rsyncs this repo (with books/,
@@ -29,7 +30,7 @@ fi
 host="$1" profile="$2"
 case "$backend" in
   llama) scripts=("${root}/host/profiles/${profile}.env" "${root}/host/install.sh") ;;
-  vllm) scripts=("${root}/host/vllm.sh") ;;
+  vllm) scripts=("${root}/host/profiles/${profile}.env" "${root}/host/vllm.sh") ;;
   *) echo "backend is llama or vllm" >&2; exit 2 ;;
 esac
 

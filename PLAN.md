@@ -363,6 +363,12 @@ the model settings and the gold-set format, then place matching.
 - 10 October: the author's glossary is parsed (`glossary build`,
   `glossary who`) and shown under each name in the alias tasks; a ruling
   for «Эхо Горького Сна» names is in the guide.
+- 11 October: a silver set while the hand set grows. `gold silver` asks a
+  bigger model (GLM-5.3 on 8×H200) every task but top with the guide as
+  instructions; `eval` scores the run against it and reports its agreement
+  with the hand answers. M1 work can be compared on silver numbers right
+  away; it is accepted on hand numbers, and silver is trusted per task only
+  where agreement is high (about 80%, κ 0.6, as for the repeat pass).
 - Left: the annotation. Alias, place, link, compare and top before M1
   (about six evenings); event and quote before M2; each task's repeat pass
   two weeks after it. Then `eval`, whose numbers M1 has to beat, and the

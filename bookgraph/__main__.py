@@ -15,6 +15,10 @@
   bookgraph gold pack NAME             Label Studio tasks for the gold set, gold/NAME/packets/
   bookgraph gold import NAME FILE [--repeat]
                                        a Label Studio export into gold/NAME/answers/
+  bookgraph gold import NAME --db annotate/data/label_studio.sqlite3
+                                       every project of a Label Studio database
+  bookgraph gold silver NAME [-t TASKS] [-j 32] [--limit N]
+                                       the gold tasks answered by a bigger served model
   bookgraph gold glossary NAME         the author's glossary into the alias packets
   bookgraph glossary build NAME FILE   the author's glossary FB2 into work/NAME/glossary.json
   bookgraph glossary who NAME QUERY [--full]
@@ -148,11 +152,17 @@ def cmd_gold(args) -> None:
 
     if args.action == "pack":
         gold.pack(args.book)
+    elif args.action == "silver":
+        from . import silver
+
+        silver.run(args.book, args.tasks, args.jobs, args.limit)
     elif args.action == "glossary":
         gold.add_glossary(args.book)
+    elif args.db:
+        gold.import_db(args.book, Path(args.db))
     else:
         if not args.file:
-            sys.exit("gold import: which export file?")
+            sys.exit("gold import: which export file, or --db?")
         gold.import_export(args.book, Path(args.file), args.repeat)
 
 
@@ -234,10 +244,14 @@ def main(argv=None) -> None:
     p.add_argument("--save", action="store_true", help="keep this run as gold/NAME/baseline.json")
     p.set_defaults(func=cmd_eval)
     p = sub.add_parser("gold")
-    p.add_argument("action", choices=("pack", "import", "glossary"))
+    p.add_argument("action", choices=("pack", "import", "silver", "glossary"))
     p.add_argument("book")
     p.add_argument("file", nargs="?", help="Label Studio JSON export, for import")
     p.add_argument("--repeat", action="store_true", help="the export is the second pass, for agreement")
+    p.add_argument("--db", help="import from a Label Studio database instead of an export")
+    p.add_argument("-t", "--tasks", help="silver: tasks to answer, as alias,place; default all but top")
+    p.add_argument("-j", "--jobs", type=int, default=32, help="silver: requests at once")
+    p.add_argument("--limit", type=int, help="silver: at most this many new answers per task")
     p.set_defaults(func=cmd_gold)
     p = sub.add_parser("glossary")
     p.add_argument("action", choices=("build", "who"))

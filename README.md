@@ -46,6 +46,25 @@ from the run, and `gold import NAME EXPORT.json`; how to annotate, and how
 to run Label Studio on a remote host with `scripts/annotate.sh`, is in
 [docs/gold.md](docs/gold.md).
 
+`gold import NAME --db annotate/data/label_studio.sqlite3` takes the
+answers straight from Label Studio's database, without an export.
+
+**The silver set.** `gold silver NAME` puts the same tasks to a bigger
+model than the run's, with the guide's own rules as its instructions, and
+writes `gold/NAME/silver/`. `eval` then also scores the run against those
+answers and prints `silver.agree.TASK`: how often the judge answers as you
+did. It gives numbers before the hand annotation is done; a stage is
+still accepted on the hand answers. The judge runs on a rented host:
+
+```bash
+scripts/deploy.sh -b vllm USER@HOST judge-glm
+ssh -N -L 8080:127.0.0.1:8080 USER@HOST &
+BOOKGRAPH_MODEL=glm-5.3 .venv/bin/python -m bookgraph gold silver slomannyj_mech -j 32
+```
+
+`judge-glm` is GLM-5.3 on 8×H200; `judge-flash` is DeepSeek-V4-Flash on
+2×H200, cheaper and weaker. Never judge with the run's own model.
+
 `glossary build NAME FILE` reads the author's glossary, when the book has
 one (`books/slomannyj_spravochnik-*.fb2.zip` for «Сломанный Меч»), into
 `work/NAME/glossary.json`: names, epithets, years and era, the city or clan

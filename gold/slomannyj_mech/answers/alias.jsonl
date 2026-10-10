@@ -1,0 +1,37 @@
+{"gid": "alias-0001", "kind": "characters", "a": "Трижды Предатель", "b": "Чёрное Солнце", "stratum": "merged", "verdict": "different", "at": "2026-10-07 17:43:41.822446"}
+{"gid": "alias-0002", "kind": "characters", "a": "Эрик Винчестер", "b": "Глава Короны", "stratum": "merged", "verdict": "same", "at": "2026-10-07 17:44:26.936310"}
+{"gid": "alias-0003", "kind": "characters", "a": "Хейли Арк", "b": "Старик Хейли", "stratum": "merged", "verdict": "same", "at": "2026-10-07 17:44:39.591954"}
+{"gid": "alias-0004", "kind": "characters", "a": "Ален Луперк", "b": "Громобой", "stratum": "merged", "verdict": "different", "at": "2026-10-07 17:44:54.309799"}
+{"gid": "alias-0005", "kind": "characters", "a": "Жанна Арк", "b": "Жанна", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:23:36.067579"}
+{"gid": "alias-0006", "kind": "characters", "a": "Кардин Винчестер", "b": "Одноглазый", "stratum": "merged", "verdict": "different", "note": "одноглазый is not a character", "at": "2026-10-09 12:25:33.696958"}
+{"gid": "alias-0007", "kind": "characters", "a": "Всезнайка", "b": "Книжник", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:25:56.638972"}
+{"gid": "alias-0008", "kind": "characters", "a": "Лаванда Арк", "b": "Лав", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:26:13.877320"}
+{"gid": "alias-0009", "kind": "characters", "a": "Нора Валькирия", "b": "Янг", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:27:23.194691"}
+{"gid": "alias-0010", "kind": "characters", "a": "Руби Роуз", "b": "Детожор", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:27:30.096058"}
+{"gid": "alias-0011", "kind": "characters", "a": "Злое Семя", "b": "Чёрный Легат", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:27:51.998578"}
+{"gid": "alias-0012", "kind": "characters", "a": "Азэми Ноэда", "b": "Азэми", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:28:03.818005"}
+{"gid": "alias-0013", "kind": "characters", "a": "Ален Луперк", "b": "Сын леса", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:28:33.722907"}
+{"gid": "alias-0014", "kind": "characters", "a": "Жон Арк", "b": "Мрачный Арк", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:28:44.502167"}
+{"gid": "alias-0015", "kind": "characters", "a": "Злое Семя", "b": "Император", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:28:59.395865"}
+{"gid": "alias-0016", "kind": "characters", "a": "Руби Роуз", "b": "Руби", "stratum": "merged", "verdict": "uncertain", "note": "not a name", "at": "2026-10-09 12:30:00.424500"}
+{"gid": "alias-0017", "kind": "characters", "a": "Ирис Рокс", "b": "Всезнайка Ирис", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:30:10.626124"}
+{"gid": "alias-0018", "kind": "characters", "a": "Гусиное Перо", "b": "Перо", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:30:59.390881"}
+{"gid": "alias-0019", "kind": "characters", "a": "Лай", "b": "Лайфхак", "stratum": "merged", "verdict": "uncertain", "note": "Joke baed on name", "at": "2026-10-09 12:31:31.678974"}
+{"gid": "alias-0020", "kind": "characters", "a": "Железноногий", "b": "Верховный Фульмитарий", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:33:52.547585"}
+{"gid": "alias-0021", "kind": "characters", "a": "Вельвет Скарлатина", "b": "Velvet", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:33:16.146695"}
+{"gid": "alias-0022", "kind": "characters", "a": "Ален Луперк", "b": "Ален", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:34:18.499099"}
+{"gid": "alias-0023", "kind": "characters", "a": "Озпин", "b": "Изумрудный Охотник", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:34:32.883988"}
+{"gid": "alias-0024", "kind": "characters", "a": "Жон Арк", "b": "Жон Базиль", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:34:59.318667"}
+{"gid": "alias-0025", "kind": "characters", "a": "Жон Арк", "b": "Жон Стальные Яйца", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:35:27.017009"}
+{"gid": "alias-0026", "kind": "characters", "a": "Палач", "b": "Бог Возмездия", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:33:52.561722"}
+{"gid": "alias-0027", "kind": "characters", "a": "Лорд-Призыватель", "b": "Икс", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:40:10.275936"}
+{"gid": "alias-0028", "kind": "characters", "a": "Эрик Винчестер", "b": "Эрик", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:41:20.096569"}
+{"gid": "alias-0029", "kind": "characters", "a": "Ведьма", "b": "Моя Королева", "stratum": "merged", "verdict": "different", "at": "2026-10-09 12:42:16.172863"}
+{"gid": "alias-0030", "kind": "characters", "a": "Жон Арк", "b": "Жон Обманщик", "stratum": "merged", "verdict": "same", "at": "2026-10-09 12:42:29.231920"}
+{"gid": "alias-0031", "kind": "characters", "a": "Жон Арк", "b": "Император Жона", "stratum": "merged", "verdict": "different", "at": "2026-10-10 11:47:37.073726"}
+{"gid": "alias-0032", "kind": "characters", "a": "Анна Арк", "b": "Анн", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:48:07.752235"}
+{"gid": "alias-0033", "kind": "characters", "a": "Жон Арк", "b": "Безрукий Мальчик", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:48:19.014347"}
+{"gid": "alias-0034", "kind": "characters", "a": "Питер Порт", "b": "Порт", "stratum": "merged", "verdict": "same", "note": "«ch010 snippet: портовый грузчик, false hit", "at": "2026-10-10 11:53:32.909677"}
+{"gid": "alias-0035", "kind": "characters", "a": "Ален Луперк", "b": "Волчий Малыш", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:53:44.504910"}
+{"gid": "alias-0036", "kind": "characters", "a": "Кардин Винчестер", "b": "Бесстрашный Рыцарь", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:53:59.314636"}
+{"gid": "alias-0037", "kind": "characters", "a": "Вайс Шни", "b": "Беловолосая сука", "stratum": "merged", "verdict": "same", "at": "2026-10-10 11:54:15.097113"}

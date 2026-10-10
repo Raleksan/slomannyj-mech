@@ -349,14 +349,31 @@ def agreement(book: str) -> dict:
     return out
 
 
-def score(book: str) -> dict:
+def silver_agreement(book: str) -> dict:
+    """How often the silver judge answers as the hand answers do."""
     from .gold import load
+    from .silver import load as load_silver
+
+    out = {}
+    for task, field in AGREE.items():
+        hand = {r["gid"]: r.get(field) for r in load(book, task)}
+        pairs = [(hand[r["gid"]], r.get(field)) for r in load_silver(book, task) if r["gid"] in hand]
+        if pairs:
+            out[f"silver.agree.{task}"] = {"value": round(mean(a == b for a, b in pairs), 4),
+                                           "kappa": round(kappa(pairs), 4), "n": len(pairs)}
+    return out
+
+
+def score(book: str, silver: bool = False) -> dict:
+    """The run against the hand answers, or with silver against the judge's."""
+    from .gold import load
+    from .silver import load as load_silver
 
     run = Run(book)
     out = {}
     for task, fn in SCORERS.items():
-        out.update(fn(run, load(book, task)))
-    out.update(agreement(book))
+        out.update(fn(run, load_silver(book, task) if silver else load(book, task)))
+    out.update(silver_agreement(book) if silver else agreement(book))
     return out
 
 
