@@ -203,9 +203,14 @@ aliases appear word-for-word in the chunk. It's a hint, not authority.
      compatible contexts), replacing `stem()`;
    - character n-grams and `ё→е` for candidates; written forms are kept
      as evidence;
-   - a small RWBY lexicon (canon names, transliterations, teams, known
-     relationships) as a hint, never forcing the fan fiction's own
-     characters into canon ones.
+   - the author's glossary («Сломанный Справочник», `glossary.json`, 624
+     entries) in place of a hand-made RWBY lexicon: anchor entities with
+     the right nominatives (the run's «Хейль» is «Хейли» 853 times in the
+     text), must-not-merge for namesakes of other eras (six «Жон Арк»,
+     four «Жанна Арк»), and candidates for names the run missed (the
+     Урицуки clan, 105 mentions, no entity). Entries from «Эхо Горького
+     Сна» are another world, never matched to main characters. A prior,
+     never evidence for extraction or summaries, and not the gold set.
 3. **Candidates:** what we group today (shared name words), the nearest
    profile embeddings, n-grams and the lexicon, cut by the reranker.
    **Every singleton** gets candidates.
@@ -355,6 +360,9 @@ the model settings and the gold-set format, then place matching.
   packets, labeling configs and guide ([docs/gold.md](docs/gold.md));
   `gold import` and the gold measures; Label Studio, locally or on a host
   (`scripts/annotate.sh`); the model A/B test (under "Measured").
+- 10 October: the author's glossary is parsed (`glossary build`,
+  `glossary who`) and shown under each name in the alias tasks; a ruling
+  for «Эхо Горького Сна» names is in the guide.
 - Left: the annotation. Alias, place, link, compare and top before M1
   (about six evenings); event and quote before M2; each task's repeat pass
   two weeks after it. Then `eval`, whose numbers M1 has to beat, and the

@@ -46,6 +46,15 @@ from the run, and `gold import NAME EXPORT.json`; how to annotate, and how
 to run Label Studio on a remote host with `scripts/annotate.sh`, is in
 [docs/gold.md](docs/gold.md).
 
+`glossary build NAME FILE` reads the author's glossary, when the book has
+one (`books/slomannyj_spravochnik-*.fb2.zip` for «Сломанный Меч»), into
+`work/NAME/glossary.json`: names, epithets, years and era, the city or clan
+it lists them under, teams, and which entries belong to «Эхо Горького
+Сна», the book inside the book. `glossary who NAME Хейли` looks a name up.
+`gold glossary NAME` shows the entries in the alias tasks, and
+`scripts/annotate.sh local refresh alias` puts them into a running Label
+Studio without touching the answers.
+
 `scripts/ab.sh USER@HOST NAME` puts 40 chunks of the gold sample through
 the original Qwen3.8-27B and the abliterated one on an A6000 and compares
 them: failures, refusals, empty answers, how much they find, speed.

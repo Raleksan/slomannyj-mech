@@ -5,6 +5,8 @@
   bookgraph gold import NAME FILE [--repeat]
                                a Label Studio JSON export into
                                gold/NAME/answers/<task>.jsonl
+  bookgraph gold glossary NAME the author's glossary entries for each name of
+                               the alias packets, written into them in place
 
 Packets are drawn from the run's own output with a fixed seed, so packing
 again gives the same tasks. Each task has a stable "gid", which is what
@@ -373,12 +375,62 @@ def pack_quote(run: Run, rng: random.Random) -> list[dict]:
     return tasks
 
 
+GLOSSARY_BOX = re.compile(r'<div class="glossary"[^>]*>.*?</div>', re.S)
+
+
+def glossary_box(found: list[tuple[int, dict]]) -> str:
+    """The glossary's entries for one name, shown under it in an alias task:
+    every entry of the best match, so namesakes show up side by side."""
+    from .glossary import line
+
+    best = found[0][0] if found else 0
+    shown = [e for s, e in found if s == best][:6] if best >= 2 else []
+    if not shown:
+        body = "<i>в справочнике нет</i>"
+    else:
+        body = "<br>".join(html.escape(line(e, 300)).replace("\n    ", " — ") for e in shown)
+    return ('<div class="glossary" style="border-left:3px solid #7a9a5a;padding-left:6px;'
+            f'margin:4px 0"><small><b>Справочник:</b> {body}</small></div>')
+
+
+def with_glossary(task: dict, glossary: dict) -> dict:
+    """An alias task with the glossary's entries under each name; only the
+    html changes, so the answers already given stay attached."""
+    from .glossary import lookup
+
+    for side in ("a", "b"):
+        key = f"{side}_html"
+        page = GLOSSARY_BOX.sub("", task[key])
+        box = glossary_box(lookup(glossary, task[side], least=2))
+        task[key] = page.replace("</h3>", "</h3>" + box, 1)
+    return task
+
+
+def add_glossary(book: str) -> None:
+    from .glossary import load
+
+    glossary = load(book)
+    if glossary is None:
+        raise SystemExit(f"no work/{book}/glossary.json: run bookgraph glossary build {book} FILE")
+    for name in ("alias", "alias-repeat"):
+        path = gold_dir(book) / "packets" / f"{name}.json"
+        data = read_json(path)
+        for t in data:
+            with_glossary(t["data"], glossary)
+        write_json(path, data)
+        found = sum("справочнике нет" not in t["data"][k] for t in data for k in ("a_html", "b_html"))
+        print(f"{name}: {found} of {2 * len(data)} names found in the glossary")
+
+
 PACKERS = {"alias": pack_alias, "place": pack_place, "link": pack_link, "compare": pack_compare,
            "top": pack_top, "event": pack_event, "quote": pack_quote}
 
 
 def pack(book: str) -> None:
+    from .glossary import load
+
     run = Run(book)
+    glossary = load(book)
     out = gold_dir(book) / "packets"
     out.mkdir(parents=True, exist_ok=True)
     for task in TASKS:
@@ -387,6 +439,9 @@ def pack(book: str) -> None:
         for n, it in enumerate(items, 1):
             it["gid"] = f"{task}-{n:04d}"
         data = [{"data": it} for it in items]
+        if task == "alias" and glossary is not None:
+            for it in items:
+                with_glossary(it, glossary)
         write_json(out / f"{task}.json", data)
         repeat = rng.sample(data, max(1, round(len(data) * REPEAT_SHARE))) if task != "top" else data
         write_json(out / f"{task}-repeat.json", repeat)

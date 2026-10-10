@@ -5,6 +5,9 @@
 #   scripts/annotate.sh local projects [BOOK] PACKET...
 #                                                  a project per packet, e.g.
 #                                                  place, or place-repeat
+#   scripts/annotate.sh local refresh [BOOK] PACKET...
+#                                                  update those projects' tasks
+#                                                  from the packets (html only)
 #   scripts/annotate.sh [-p PORT] USER@HOST up      start it (Docker, pinned image)
 #   scripts/annotate.sh [-p PORT] USER@HOST tunnel  forward http://127.0.0.1:8090
 #   scripts/annotate.sh [-p PORT] USER@HOST backup  copy its data to annotate/data/
@@ -65,9 +68,10 @@ if [[ "$host" == local ]]; then
     down)
       "$engine" stop label-studio >/dev/null && "$engine" rm label-studio >/dev/null && echo stopped
       ;;
-    projects)
+    projects|refresh)
       # Usage here is: local projects [BOOK] PACKET...; the book defaults to
       # the only one in gold/.
+      flag=(); [[ "$2" == refresh ]] && flag=(--refresh)
       shift 2
       book="$(ls "${root}/gold" | head -1)"
       if [[ $# -gt 0 && -d "${root}/gold/$1" ]]; then book="$1"; shift; fi
@@ -80,10 +84,10 @@ if [[ "$host" == local ]]; then
       "$engine" exec label-studio rm -rf /tmp/packets
       "$engine" cp "$tmp" label-studio:/tmp/packets
       rm -rf "$tmp"
-      "$engine" exec label-studio python3 /tmp/packets/projects.py /tmp/packets "$@" 2>/dev/null \
+      "$engine" exec label-studio python3 /tmp/packets/projects.py "${flag[@]}" /tmp/packets "$@" 2>/dev/null \
         | grep -E "^[a-z-]+: |^expected"
       ;;
-    *) echo "local takes up, down or projects" >&2; exit 2 ;;
+    *) echo "local takes up, down, projects or refresh" >&2; exit 2 ;;
   esac
   exit 0
 fi

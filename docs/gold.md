@@ -122,6 +122,18 @@ why the pair was picked:
 | singleton | different | an epithet the run didn't recognise, or a real stranger |
 | easy | different | a control: these should all be *different* |
 
+Under each name, **Справочник** shows the author's glossary entries for it
+(«Сломанный Справочник»): every entry with that name, so namesakes from
+other eras show up side by side, with years, section and team. *ЭХО*
+marks a character of «Эхо Горького Сна», the book inside the book. The
+glossary is the author's word on who is who, so use it; the text still
+decides which of the namesakes a mention is. *в справочнике нет* means
+no entry has that name. To look a name up yourself:
+
+```bash
+.venv/bin/python -m bookgraph glossary who slomannyj_mech Хейли
+```
+
 **The rules:**
 
 - **same**: everywhere the book uses both, they name one character (place,
@@ -341,3 +353,8 @@ One line each: the case, the answer, why.
   and say who is who in the note, with chapters. The gold set compares
   names, not mentions, so only the note records that the full name itself
   is shared; M2's paragraph ids will tell the mentions apart.
+- **A character of «Эхо Горького Сна» and a main-world character**
+  (*Жон Арк | Зёрнышко*): *different*, unless the main text itself says
+  outright who the Echo character is. The author hides who is who on
+  purpose; readers' guesses don't count, the glossary marks these *ЭХО*,
+  and the graph keeps the two worlds apart.

@@ -15,6 +15,10 @@
   bookgraph gold pack NAME             Label Studio tasks for the gold set, gold/NAME/packets/
   bookgraph gold import NAME FILE [--repeat]
                                        a Label Studio export into gold/NAME/answers/
+  bookgraph gold glossary NAME         the author's glossary into the alias packets
+  bookgraph glossary build NAME FILE   the author's glossary FB2 into work/NAME/glossary.json
+  bookgraph glossary who NAME QUERY [--full]
+                                       glossary entries a name may be, best first
   bookgraph ab NAME [-j 3] [--report]  the gold sample through the served model; compare models
   bookgraph stats NAME                 chapter and chunk sizes
   bookgraph progress NAME [-w SECONDS] progress of the running stage
@@ -144,10 +148,24 @@ def cmd_gold(args) -> None:
 
     if args.action == "pack":
         gold.pack(args.book)
+    elif args.action == "glossary":
+        gold.add_glossary(args.book)
     else:
         if not args.file:
             sys.exit("gold import: which export file?")
         gold.import_export(args.book, Path(args.file), args.repeat)
+
+
+def cmd_glossary(args) -> None:
+    from . import glossary
+
+    if args.action == "build":
+        data = glossary.build(args.book, Path(args.arg))
+        echo = sum(e["world"] == "echo" for e in data["entries"])
+        print(f"{len(data['entries'])} entries ({echo} from the book inside the book), "
+              f"{len(data['chronology'])} chronology rows: work/{args.book}/glossary.json")
+    else:
+        glossary.who(args.book, args.arg, args.full)
 
 
 def cmd_ab(args) -> None:
@@ -216,11 +234,17 @@ def main(argv=None) -> None:
     p.add_argument("--save", action="store_true", help="keep this run as gold/NAME/baseline.json")
     p.set_defaults(func=cmd_eval)
     p = sub.add_parser("gold")
-    p.add_argument("action", choices=("pack", "import"))
+    p.add_argument("action", choices=("pack", "import", "glossary"))
     p.add_argument("book")
     p.add_argument("file", nargs="?", help="Label Studio JSON export, for import")
     p.add_argument("--repeat", action="store_true", help="the export is the second pass, for agreement")
     p.set_defaults(func=cmd_gold)
+    p = sub.add_parser("glossary")
+    p.add_argument("action", choices=("build", "who"))
+    p.add_argument("book")
+    p.add_argument("arg", metavar="FILE|QUERY", help="the glossary FB2 to build from, or a name to look up")
+    p.add_argument("--full", action="store_true", help="whole descriptions, not the first lines")
+    p.set_defaults(func=cmd_glossary)
     p = sub.add_parser("ab")
     p.add_argument("book")
     p.add_argument("-j", "--jobs", type=int, default=3)
