@@ -191,7 +191,7 @@ def pack_alias(run: Run, rng: random.Random) -> list[dict]:
     # Kept apart though they share a name word: relatives or missed merges.
     by_word = defaultdict(list)
     for x in chars:
-        for w in set(re.findall(r"\w{3,}", x["name"])):
+        for w in sorted(set(re.findall(r"\w{3,}", x["name"]))):
             by_word[w].append(x["name"])
     shared = [(a, b) for v in by_word.values() if 1 < len(v) < 15 for a in v for b in v if a < b]
     rng.shuffle(shared)
@@ -215,7 +215,7 @@ def pack_alias(run: Run, rng: random.Random) -> list[dict]:
         items = run.entities[kind]
         words = defaultdict(list)
         for x in items:
-            for w in set(re.findall(r"\w{4,}", x["name"])):
+            for w in sorted(set(re.findall(r"\w{4,}", x["name"]))):
                 words[w].append(x["name"])
         pairs = [(a, b) for v in words.values() if 1 < len(v) < 10 for a in v for b in v if a < b]
         pairs += [(x["name"], f) for x in items for f in x["aliases"] if f != x["name"]]
