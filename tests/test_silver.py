@@ -4,7 +4,9 @@
 """
 
 import asyncio
+import tempfile
 import unittest
+from pathlib import Path
 
 from pydantic import ValidationError
 
@@ -65,6 +67,12 @@ class Silver(unittest.TestCase):
         fake = Fake([{"why": "1", "winner": "A"}, {"why": "2", "winner": "A"}])
         got = asyncio.run(silver.answer(fake, "compare", COMPARE))
         self.assertEqual((got["winner"], got["orders"]), ("uncertain", ["A", "B"]))
+
+    def test_done_skips_a_line_cut_by_a_kill(self):
+        with tempfile.TemporaryDirectory() as d:
+            file = Path(d) / "alias.jsonl"
+            file.write_text('{"gid": "alias-0001", "model": "glm-5.3"}\n{"gid": "alias-00', encoding="utf-8")
+            self.assertEqual(list(silver.done(file)), ["alias-0001"])
 
     def test_every_task_has_a_prompt_and_schema(self):
         self.assertEqual(set(silver.TASKS), set(scores.AGREE))

@@ -168,7 +168,14 @@ def silver_dir(book: str) -> Path:
 def done(file: Path) -> dict[str, dict]:
     if not file.exists():
         return {}
-    return {r["gid"]: r for r in map(json.loads, file.read_text(encoding="utf-8").splitlines()) if r}
+    rows = {}
+    for line in file.read_text(encoding="utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:  # cut short by a killed run; that task is asked again
+            continue
+        rows[r["gid"]] = r
+    return rows
 
 
 async def label(book: str, tasks: tuple[str, ...], jobs: int, limit: int | None) -> None:
@@ -181,8 +188,10 @@ async def label(book: str, tasks: tuple[str, ...], jobs: int, limit: int | None)
             file = out / f"{task}.jsonl"
             have = done(file)
             items = [t["data"] for t in read_json(gold_dir(book) / "packets" / f"{task}.json")]
-            todo = [d for d in items if d["gid"] not in have][:limit]
-            print(f"{task}: {len(have)} answered, {len(todo)} to ask {name}")
+            # Another model's answers (the run's own model, a test) are asked again.
+            todo = [d for d in items if have.get(d["gid"], {}).get("model") != name][:limit]
+            mine = sum(r.get("model") == name for r in have.values())
+            print(f"{task}: {mine} answered by {name}, {len(todo)} to ask")
             failed = 0
             start = time.monotonic()
 
@@ -201,9 +210,12 @@ async def label(book: str, tasks: tuple[str, ...], jobs: int, limit: int | None)
                     f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
             await asyncio.gather(*(one(d) for d in todo))
-            # Sorted and without duplicates, once the task is done.
-            file.write_text("".join(json.dumps(have[g], ensure_ascii=False) + "\n" for g in sorted(have)),
-                            encoding="utf-8")
+            # Sorted and without duplicates, once the task is done; write then
+            # rename, so a kill here never empties the file.
+            tmp = file.with_suffix(file.suffix + ".tmp")
+            tmp.write_text("".join(json.dumps(have[g], ensure_ascii=False) + "\n" for g in sorted(have)),
+                           encoding="utf-8")
+            tmp.replace(file)
             print(f"{task}: {len(have)} in {file.relative_to(ROOT)}, {failed} failed, "
                   f"{time.monotonic() - start:.0f}s; {client.stats.line()}")
     finally:
