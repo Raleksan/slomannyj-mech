@@ -84,11 +84,44 @@ Without it, every later change gets judged by eye.
   under "Measured" below: the original refused nothing.
 - Every later step has to beat the baseline above.
 
+### Anchors: the first run frozen before M1 (planned, not built)
+
+The link, compare, place and top answers name first-run event ids and
+place ids, and `work/` is untracked. M1 already re-runs `resolve` and
+`thread`: that overwrites the first run's `where`, edges and `importance`,
+and renumbers places by mention count. M2 then changes the event ids too.
+
+- **`bookgraph gold anchors NAME`** writes the tracked
+  `gold/NAME/anchors.json`: for every first-run event its best paragraph
+  (`para`), its chunk's paragraph `span`, `title`, `what`, and the first
+  run's `importance`, `where` and outgoing edges. It refuses to overwrite
+  an existing file.
+- **Run it before the first M1 `resolve` or `thread`, and before any
+  `calibrate` or re-chunk.** Afterwards the anchors can't be rebuilt.
+- **Don't run `gold pack` again once the run has changed:** gids are
+  positions in a draw from the run, so the same gid would name another
+  task.
+- **Places, from M1 on:** a place answer keeps its option text
+  (`"p0002 Бикон"`), so `score_place` translates the gold choice by that
+  name, never by the old id. Collect every place whose `name` or `aliases`
+  equal it: none is a miss, one is the answer, several are ambiguous.
+- **Events, from M2 on:** `eval` maps a first-run id to the new events
+  whose evidence lies inside `span`, picks the best title/what overlap
+  among them, with a bonus for citing `para`. Paragraph containment alone
+  is not enough: ch022-02-e02 and -e03 share ch022.p0166.
+  - No candidate: M2 lost the event. It stays in the denominators as a
+    miss, so recall is not inflated.
+  - A tie: ambiguous. Each score is reported overall and on the
+    unambiguous subset, with the baseline re-scored from the anchors on
+    the same subset. Nothing is forced onto an event.
+
 ## Stage 1: `parse`, stable addresses (M2)
 
 - Give every paragraph a stable ID and position: `ch007.p0142` with
   character offsets, stored in `chapters.json` next to `scenes` (which
-  stays for compatibility).
+  stays for compatibility). These are the ids the gold set already cites
+  (`gold.Text`: counted from 1 over all of a chapter's scenes); a test
+  holds the two equal.
 - Mark each paragraph's type:
   - `speech`: it starts with «—»;
   - `epigraph`, `poem`, `letter`, from the FB2 tags that are flattened
@@ -343,7 +376,7 @@ main characters, and character singletons drop well below 49%.
 | milestone | stages | new book run? | payoff |
 |---|---|---|---|
 | **M0** | model settings, eval, gold set, model A/B test | no | numbers to compare against; the right model |
-| **M1** | place matching, embed, reranker, links 6b, rank 6c, singleton pass in resolve | no; links and rank need the GPU host for about 30 min | fixes three of the four measured failures |
+| **M1** | `gold anchors` first; then place matching, embed, reranker, links 6b, rank 6c, singleton pass in resolve | no; merge checks, the reranker, links and rank need the GPU host for about 30 min | fixes three of the four measured failures |
 | **M2** | parse IDs, quotes, chunk, extract schema, resolve with evidence and constraints | yes, extract plus everything after it, ~70 min | traceability, speakers, features, open threads |
 | **M3** | grounded summarize, quotes on the site | summarize only | trustworthy notes |
 | **M4** | time, relations, storyline hierarchy | small extra passes | the deeper layers from the report |
@@ -373,6 +406,10 @@ the model settings and the gold-set format, then place matching.
   (about six evenings); event and quote before M2; each task's repeat pass
   two weeks after it. Then `eval`, whose numbers M1 has to beat, and the
   A/B answers scored against the gold events.
+- Left: `gold anchors` (Stage 0, "Anchors"), built and run before M1
+  touches `resolve` or `thread`. On 10 November the first run in `work/`
+  was still whole: 2135 events, 1826 edges, every chunk hash matching.
+- Left: the silver set has not been run; it waits for a judge host.
 
 ## Open measurements
 
